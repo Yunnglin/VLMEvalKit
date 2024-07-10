@@ -9,7 +9,7 @@ from .image_vqa import (
 )
 from .mmbench_video import MMBenchVideo
 from .videomme import VideoMME
-from .utils import *
+from .utils import build_judge, extract_answer_from_item, prefetch_answer, DEBUG_MESSAGE
 from ..smp import *
 
 
@@ -41,7 +41,16 @@ def DATASET_TYPE(dataset):
 
 
 def build_dataset(dataset_name, **kwargs):
-    for cls in (IMAGE_DATASET + VIDEO_DATASET):
+    if dataset_name == 'MMBench-Video':
+        return MMBenchVideo(dataset_name, **kwargs)
+    if dataset_name == 'Video-MME':
+        return VideoMME(dataset_name, **kwargs)
+    
+    datasets = [
+        ImageCaptionDataset, ImageYORNDataset, ImageMCQDataset, ImageVQADataset,
+        MMMUDataset, OCRBench, MathVista, LLaVABench, MMVet
+    ]
+    for cls in datasets:
         if dataset_name in cls.supported_datasets():
             return cls(dataset=dataset_name, **kwargs)
 
