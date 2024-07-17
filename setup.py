@@ -1,3 +1,4 @@
+import os
 import re
 import sys
 from os.path import exists
@@ -83,8 +84,18 @@ def parse_requirements(fname='requirements.txt', with_version=True):
 with open('README.md') as f:
     readme = f.read()
 
+def pack_resource():
+    import shutil
+    root_dir = '.'
+    target_path = os.path.join(root_dir, 'run.py')
+    # 复制文件到目标位置
+    package_dir = os.path.join(root_dir, 'vlmeval')
+    dest_path = os.path.join(package_dir, 'run.py')
+
+    shutil.copy2(target_path, dest_path)
 
 def do_setup():
+    pack_resource()
     setup(
         name='vlmeval',
         version='0.1.0',
