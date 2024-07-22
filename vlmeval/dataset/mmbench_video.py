@@ -61,6 +61,10 @@ Please directly reply with your response to the only question.
 
     def __init__(self, dataset='MMBench-Video', pack=False):
         super().__init__(dataset=dataset, pack=pack)
+    
+    @classmethod
+    def supported_datasets(cls):
+        return ['MMBench-Video']
 
     @classmethod
     def supported_datasets(cls):

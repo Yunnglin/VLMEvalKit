@@ -47,6 +47,10 @@ Select the best answer to the following multiple-choice question based on the vi
         super().__init__(dataset=dataset)
         self.use_subtitle = use_subtitle
 
+    @classmethod
+    def supported_datasets(cls):
+        return ['Video-MME']
+    
     def prepare_dataset(self, dataset_name='Video-MME', repo_id='lmms-lab/Video-MME'):
 
         def check_integrity(pth):
@@ -153,8 +157,9 @@ Select the best answer to the following multiple-choice question based on the vi
             images = [vid[i].asnumpy() for i in indices]
             images = [Image.fromarray(arr) for arr in images]
             for im, pth in zip(images, frame_paths):
-                im.save(pth)
-        
+                if not osp.exists(pth):
+                    im.save(pth)
+
         return frame_paths, indices, video_info
     
     def build_prompt(self, line, num_frames):

@@ -41,16 +41,7 @@ def DATASET_TYPE(dataset):
 
 
 def build_dataset(dataset_name, **kwargs):
-    if dataset_name == 'MMBench-Video':
-        return MMBenchVideo(dataset_name, **kwargs)
-    if dataset_name == 'Video-MME':
-        return VideoMME(dataset_name, **kwargs)
-    
-    datasets = [
-        ImageCaptionDataset, ImageYORNDataset, ImageMCQDataset, ImageVQADataset,
-        MMMUDataset, OCRBench, MathVista, LLaVABench, MMVet
-    ]
-    for cls in datasets:
+    for cls in (IMAGE_DATASET + VIDEO_DATASET):
         if dataset_name in cls.supported_datasets():
             return cls(dataset=dataset_name, **kwargs)
 

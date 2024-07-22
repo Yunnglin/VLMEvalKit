@@ -89,8 +89,13 @@ def run_task(args):
                 packstr = 'pack' if args.pack else 'nopack'
                 result_file = f'{pred_root}/{model_name}_{dataset_name}_{args.nframe}frame_{packstr}.xlsx'
             if dataset_name in ['Video-MME']:
-                result_file = f'{pred_root}/{model_name}_{dataset_name}_{args.nframe}frame.xlsx' if not args.use_subtitle else f'{pred_root}/{model_name}_{dataset_name}_{args.nframe}frame_subtitle.xlsx'
-            
+                if args.pack:
+                    logger.info('Video-MME not support Pack Mode, directly change to unpack')
+                    args.pack = False
+                packstr = 'pack' if args.pack else 'nopack'
+                subtitle_str = 'subs' if args.use_subtitle else 'nosubs'
+                result_file = f'{pred_root}/{model_name}_{dataset_name}_{args.nframe}frame_{packstr}_{subtitle_str}.xlsx'
+
             if osp.exists(result_file) and args.rerun:
                 for keyword in ['openai', 'gpt', 'auxmatch']:
                     os.system(f'rm {pred_root}/{model_name}_{dataset_name}_{keyword}*')
@@ -108,8 +113,8 @@ def run_task(args):
                     nframe=args.nframe,
                     pack=args.pack,
                     verbose=args.verbose,
-                    api_nproc=args.nproc,
-                    result_file=result_file,)
+                    subtitle=args.use_subtitle,
+                    api_nproc=args.nproc)
             else:
                 model = infer_data_job(
                     model,
