@@ -86,7 +86,7 @@ with open('README.md') as f:
 
 def pack_resource():
     import shutil
-    root_dir = '.'
+    root_dir = os.path.dirname(os.path.abspath(__file__))
     target_path = os.path.join(root_dir, 'run.py')
     # 复制文件到目标位置
     package_dir = os.path.join(root_dir, 'vlmeval')
@@ -95,10 +95,10 @@ def pack_resource():
     shutil.copy2(target_path, dest_path)
 
 def do_setup():
-    pack_resource()
+    # pack_resource()
     setup(
-        name='vlmeval',
-        version='0.1.0',
+        name='ms-vlmeval',
+        version='0.1.1',
         description='OpenCompass VLM Evaluation Kit',
         author='Haodong Duan',
         author_email='dhd.efz@gmail.com',

@@ -127,7 +127,7 @@ def run_task(args):
             else:
                 if dataset.TYPE in ['MCQ', 'Y/N']:
                     judge_kwargs['model'] = 'chatgpt-0125'
-                elif listinstr(['MMVet', 'MathVista', 'LLaVABench', 'MMBench-Video'], dataset_name):
+                elif listinstr(['MMVet', 'MathVista', 'LLaVABench', 'MMBench-Video', 'MathVision'], dataset_name):
                     judge_kwargs['model'] = 'gpt-4-turbo'
                 elif listinstr(['MMLongBench'], dataset_name):
                     judge_kwargs['model'] = 'gpt-4o'
@@ -157,7 +157,7 @@ def run_task(args):
                     continue
 
             if dataset_name in [
-                'MMBench_TEST_CN', 'MMBench_TEST_EN', 'MMBench', 'MMBench_CN'
+                'MMBench_TEST_CN', 'MMBench_TEST_EN', 'MMBench', 'MMBench_CN',
                 'MMBench_TEST_CN_V11', 'MMBench_TEST_EN_V11', 'MMBench_V11', 'MMBench_CN_V11'
             ]:
                 if not MMBenchOfficialServer(dataset_name):
@@ -167,7 +167,13 @@ def run_task(args):
                     )
                     continue
 
+            eval_proxy = os.environ.get('EVAL_PROXY', None)
+            old_proxy = os.environ.get('HTTP_PROXY', '')
+
             if rank == 0 and args.mode == 'all':
+                if eval_proxy is not None:
+                    proxy_set(eval_proxy)
+
                 eval_results = dataset.evaluate(result_file, **judge_kwargs)
                 if eval_results is not None:
                     assert isinstance(eval_results, dict) or isinstance(eval_results, pd.DataFrame)
@@ -179,12 +185,17 @@ def run_task(args):
                     if len(eval_results) < len(eval_results.columns):
                         eval_results = eval_results.T
                     logger.info('\n' + tabulate(eval_results))
-
+                if eval_proxy is not None:
+                    proxy_set(old_proxy)
+                    
 def main():
     args = parse_args()
     assert len(args.data), '--data should be a list of data files'
     run_task(args)
     
+
+
+
 
 if __name__ == '__main__':
     load_env()
