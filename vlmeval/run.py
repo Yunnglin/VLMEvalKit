@@ -16,7 +16,7 @@ def parse_args():
     # Args that only apply to Video Dataset
     parser.add_argument('--nframe', type=int, default=8)
     parser.add_argument('--pack', action='store_true')
-    parser.add_argument('--use-subtitle', action='store_true')
+    parser.add_argument('--use_subtitle', action='store_true')
     # Work Dir
     parser.add_argument('--work-dir', type=str, default='.', help='select the output directory')
     # Infer + Eval or Infer Only
@@ -93,8 +93,8 @@ def run_task(args):
                     logger.info('Video-MME not support Pack Mode, directly change to unpack')
                     args.pack = False
                 packstr = 'pack' if args.pack else 'nopack'
-                subtitlestr = 'subs' if args.use_subtitle else 'nosubs'
-                result_file = f'{pred_root}/{model_name}_{dataset_name}_{args.nframe}frame_{packstr}_{subtitlestr}.xlsx'
+                subtitle_str = 'subs' if args.use_subtitle else 'nosubs'
+                result_file = f'{pred_root}/{model_name}_{dataset_name}_{args.nframe}frame_{packstr}_{subtitle_str}.xlsx'
 
             if osp.exists(result_file) and args.rerun:
                 for keyword in ['openai', 'gpt', 'auxmatch']:

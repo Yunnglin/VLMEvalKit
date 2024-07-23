@@ -74,7 +74,7 @@ class OpenAIWrapper(BaseAPI):
                 env_key = os.environ.get('OPENAI_API_KEY', '')
                 if key is None:
                     key = env_key
-                assert isinstance(key, str) and key.startswith('sk-'), (
+                assert isinstance(key, str), (
                     f'Illegal openai_key {key}. '
                     'Please set the environment variable OPENAI_API_KEY to your openai key. '
                 )

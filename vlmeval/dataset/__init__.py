@@ -9,7 +9,7 @@ from .image_vqa import (
 )
 from .mmbench_video import MMBenchVideo
 from .videomme import VideoMME
-from .utils import build_judge, extract_answer_from_item, prefetch_answer, DEBUG_MESSAGE
+from .utils import *
 from ..smp import *
 
 
