@@ -6,7 +6,7 @@ from os import environ
 @dataclass
 class Arguments:
     data: List[str] = field(default_factory=list)
-    model: List[str] = field(default_factory=list)
+    model: Union[List[dict], List[str]] = field(default_factory=dict)
     nframe: int = 8
     pack: bool = False
     use_subtitle: bool = False
