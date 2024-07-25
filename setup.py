@@ -98,7 +98,7 @@ def do_setup():
     # pack_resource()
     setup(
         name='ms-vlmeval',
-        version='0.1.3',
+        version='0.1.4',
         description='OpenCompass VLM Evaluation Kit',
         author='Haodong Duan',
         author_email='dhd.efz@gmail.com',

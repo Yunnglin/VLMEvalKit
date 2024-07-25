@@ -226,3 +226,8 @@ class GPT4V(OpenAIWrapper):
 
     def generate(self, message, dataset=None):
         return super(GPT4V, self).generate(message)
+    
+    
+class CustomAPIModel(OpenAIWrapper):
+    def generate(self, message, dataset=None):
+        return super(CustomAPIModel, self).generate(message)
