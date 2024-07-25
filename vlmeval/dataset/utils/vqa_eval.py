@@ -145,6 +145,7 @@ def _process_digit_article(inText):
         'youll': "you'll",
         'youre': "you're",
         'youve': "you've",
+        "<|im_end|>": ""
     }
     for word in tempText:
         word = manualMap.setdefault(word, word)
