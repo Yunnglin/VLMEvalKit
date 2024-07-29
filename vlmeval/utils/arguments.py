@@ -10,7 +10,7 @@ class Arguments:
     nframe: int = 8
     pack: bool = False
     use_subtitle: bool = False
-    work_dir: str = '.'
+    work_dir: str = 'outputs'
     mode: str = 'all'
     nproc: int = 1
     retry: Optional[int] = None

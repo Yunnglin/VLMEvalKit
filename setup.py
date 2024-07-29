@@ -84,6 +84,7 @@ def parse_requirements(fname='requirements.txt', with_version=True):
 with open('README.md') as f:
     readme = f.read()
 
+
 def pack_resource():
     import shutil
     root_dir = os.path.dirname(os.path.abspath(__file__))
@@ -94,15 +95,16 @@ def pack_resource():
 
     shutil.copy2(target_path, dest_path)
 
+
 def do_setup():
     setup(
         name='ms-vlmeval',
-        version='0.1.8',
-        description='OpenCompass VLM Evaluation Kit',
-        author='Haodong Duan',
-        author_email='dhd.efz@gmail.com',
-        maintainer='Haodong Duan',
-        maintainer_email='dhd.efz@gmail.com',
+        version='0.0.1',
+        description='OpenCompass VLM Evaluation Kit for Eval-Scope',
+        author='ModelScope team',
+        author_email='contact@modelscope.cn',
+        maintainer='ModelScope team',
+        maintainer_email='contact@modelscope.cn',
         long_description=readme,
         long_description_content_type='text/markdown',
         cmdclass={},
