@@ -3,7 +3,7 @@ from typing import Optional, List, Union
 from os import environ
 from vlmeval.smp import *
 
-logger = get_logger()
+logger = get_logger('arguments')
 
 @dataclass
 class Arguments:
