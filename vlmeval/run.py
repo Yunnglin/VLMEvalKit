@@ -9,7 +9,6 @@ from vlmeval.inference_mt import infer_data_job_mt
 from vlmeval.smp import *
 from vlmeval.utils.result_transfer import MMMU_result_transfer, MMTBench_result_transfer
 
-
 def parse_args():
     parser = argparse.ArgumentParser()
     # Essential Args
@@ -212,13 +211,15 @@ def run_task(args):
                     logger.info('\n' + tabulate(eval_results))
                 if eval_proxy is not None:
                     proxy_set(old_proxy)
-
-
+                    
 def main():
     args = parse_args()
     assert len(args.data), '--data should be a list of data files'
     run_task(args)
     
+
+
+
 
 if __name__ == '__main__':
     load_env()
