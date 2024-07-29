@@ -5,6 +5,7 @@ from vlmeval.config import supported_VLM
 from vlmeval.dataset import build_dataset
 from vlmeval.inference import infer_data_job
 from vlmeval.inference_video import infer_data_job_video
+from vlmeval.inference_mt import infer_data_job_mt
 from vlmeval.smp import *
 from vlmeval.utils.result_transfer import MMMU_result_transfer, MMTBench_result_transfer
 
@@ -96,6 +97,9 @@ def run_task(args):
                 subtitle_str = 'subs' if args.use_subtitle else 'nosubs'
                 result_file = f'{pred_root}/{model_name}_{dataset_name}_{args.nframe}frame_{packstr}_{subtitle_str}.xlsx'
 
+            if dataset.TYPE == 'MT':
+                result_file = result_file.replace('.xlsx', '.tsv')
+
             if osp.exists(result_file) and args.rerun:
                 for keyword in ['openai', 'gpt', 'auxmatch']:
                     os.system(f'rm {pred_root}/{model_name}_{dataset_name}_{keyword}*')
@@ -104,7 +108,7 @@ def run_task(args):
                 model = model_name  # which is only a name
 
             # Perform the Inference
-            if dataset_name == 'MMBench-Video' or dataset_name == 'Video-MME':
+            if dataset.MODALITY == 'VIDEO':
                 model = infer_data_job_video(
                     model,
                     work_dir=pred_root,
@@ -115,6 +119,15 @@ def run_task(args):
                     verbose=args.verbose,
                     subtitle=args.use_subtitle,
                     api_nproc=args.nproc)
+            elif dataset.TYPE == 'MT':
+                model = infer_data_job_mt(
+                    model,
+                    work_dir=pred_root,
+                    model_name=model_name,
+                    dataset=dataset,
+                    verbose=args.verbose,
+                    api_nproc=args.nproc,
+                    ignore_failed=args.ignore)
             else:
                 model = infer_data_job(
                     model,
@@ -140,7 +153,7 @@ def run_task(args):
                     judge_kwargs['model'] = 'chatgpt-0125'
                 elif listinstr(['MMVet', 'MathVista', 'LLaVABench', 'MMBench-Video', 'MathVision'], dataset_name):
                     judge_kwargs['model'] = 'gpt-4-turbo'
-                elif listinstr(['MMLongBench'], dataset_name):
+                elif listinstr(['MMLongBench', 'MMDU'], dataset_name):
                     judge_kwargs['model'] = 'gpt-4o'
             if 'OPENAI_API_KEY_JUDGE' in os.environ and len(os.environ['OPENAI_API_KEY_JUDGE']):
                 judge_kwargs['key'] = os.environ['OPENAI_API_KEY_JUDGE']

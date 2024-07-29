@@ -95,10 +95,9 @@ def pack_resource():
     shutil.copy2(target_path, dest_path)
 
 def do_setup():
-    # pack_resource()
     setup(
         name='ms-vlmeval',
-        version='0.1.4',
+        version='0.1.8',
         description='OpenCompass VLM Evaluation Kit',
         author='Haodong Duan',
         author_email='dhd.efz@gmail.com',
@@ -130,4 +129,5 @@ def do_setup():
 
 
 if __name__ == '__main__':
+    pack_resource()
     do_setup()
