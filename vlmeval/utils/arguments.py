@@ -1,7 +1,9 @@
 from dataclasses import dataclass, field
 from typing import Optional, List, Union
 from os import environ
+from vlmeval.smp import *
 
+logger = get_logger()
 
 @dataclass
 class Arguments:
@@ -21,13 +23,19 @@ class Arguments:
     limit: Optional[int] = None
 
     # For OpenAI API
-    OPENAI_API_KEY: Optional[str] = None
+    OPENAI_API_KEY: str = 'EMPTY'
     OPENAI_API_BASE: Optional[str] = None
     LOCAL_LLM: Optional[str] = None
 
     def __post_init__(self):
-        environ.update({
-            'OPENAI_API_KEY': self.OPENAI_API_KEY,
-            'OPENAI_API_BASE': self.OPENAI_API_BASE,
-            'LOCAL_LLM': self.LOCAL_LLM
-        })
+        try:
+            if self.OPENAI_API_BASE and self.LOCAL_LLM:
+                environ.update({
+                    'OPENAI_API_KEY': self.OPENAI_API_KEY,
+                    'OPENAI_API_BASE': self.OPENAI_API_BASE,
+                    'LOCAL_LLM': self.LOCAL_LLM
+                })
+        except Exception as e:
+            logger.error(f'Error occurred when setting environment variables: {e}')
+            raise e
+            
