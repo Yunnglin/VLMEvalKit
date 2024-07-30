@@ -147,7 +147,8 @@ class OpenAIWrapper(BaseAPI):
         else:
             assert all([x['type'] == 'text' for x in inputs])
             text = '\n'.join([x['value'] for x in inputs])
-            content_list = [dict(type='text', text=text)]
+            # content_list = [dict(type='text', text=text)] # for text-based judge, no 'type' field
+            content_list = text
         return content_list
 
     def prepare_inputs(self, inputs):
