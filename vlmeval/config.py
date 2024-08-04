@@ -70,7 +70,7 @@ api_models = {
     # SenseChat-V
     'SenseChat-5-Vision': partial(SenseChatVisionAPI, model='SenseChat-5-Vision', temperature=0, retry=10),
     # Custom API compact OpenAI 
-    'CustomAPIModel': partial(CustomAPIModel, model='custom', temperature=0, key='EMPTY', retry=10),
+    'CustomAPIModel': partial(CustomAPIModel, model='custom', temperature=0, img_size=-1, img_detail='high', key='EMPTY', retry=10),
 }
 
 minicpm_series = {

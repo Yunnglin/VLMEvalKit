@@ -211,7 +211,7 @@ class BaseAPI:
                 ret_code, answer, log = self.generate_inner(message, **kwargs)
                 if ret_code == 0 and self.fail_msg not in answer and answer != '':
                     if self.verbose:
-                        print(answer)
+                        self.logger.info(answer)
                     return answer
                 elif self.verbose:
                     if not isinstance(log, str):
