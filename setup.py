@@ -99,7 +99,7 @@ def pack_resource():
 def do_setup():
     setup(
         name='ms-vlmeval',
-        version='0.0.1',
+        version='0.0.4',
         description='OpenCompass VLM Evaluation Kit for Eval-Scope',
         author='ModelScope team',
         author_email='contact@modelscope.cn',
