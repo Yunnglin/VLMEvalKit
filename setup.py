@@ -99,7 +99,7 @@ def pack_resource():
 def do_setup():
     setup(
         name='ms-vlmeval',
-        version='0.0.4',
+        version='0.0.5',
         description='OpenCompass VLM Evaluation Kit for Eval-Scope',
         author='ModelScope team',
         author_email='contact@modelscope.cn',
@@ -131,5 +131,6 @@ def do_setup():
 
 
 if __name__ == '__main__':
+    # python setup.py sdist bdist_wheel
     pack_resource()
     do_setup()

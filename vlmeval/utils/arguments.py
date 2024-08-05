@@ -5,6 +5,7 @@ from vlmeval.smp import *
 
 logger = get_logger('arguments')
 
+
 @dataclass
 class Arguments:
     data: List[str] = field(default_factory=list)
