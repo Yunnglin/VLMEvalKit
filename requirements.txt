@@ -21,3 +21,4 @@ tqdm
 transformers
 validators
 xlsxwriter
+torchvision
