@@ -7,18 +7,21 @@ from ..utils import track_progress_rich
 import torchvision.transforms as T
 from torchvision import transforms
 from torchvision.transforms.functional import InterpolationMode
-from decord import VideoReader, cpu
-import imageio
-import cv2
-import zipfile
-import os
-import glob
-from moviepy.editor import VideoFileClip, ImageSequenceClip
-import moviepy.config_defaults
-from .utils.mvbench import *
+try:
+    from decord import VideoReader, cpu
+    import imageio
+    import cv2
+    import zipfile
+    import os
+    import glob
+    from moviepy.editor import VideoFileClip, ImageSequenceClip
+    import moviepy.config_defaults
+    from .utils.mvbench import *
 
-FAIL_MSG = 'Failed to obtain answer via API.'
-moviepy.config_defaults.LOGGER_LEVEL = logging.CRITICAL + 1
+    FAIL_MSG = 'Failed to obtain answer via API.'
+    moviepy.config_defaults.LOGGER_LEVEL = logging.CRITICAL + 1
+except ImportError:
+    print('Please install moviepy and imageio to use MVBench dataset.')
 
 
 class MVBench(VideoBaseDataset):
