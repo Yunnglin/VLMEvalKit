@@ -89,13 +89,15 @@ def run_task(args):
             if dataset_name in ['MMBench-Video']:
                 packstr = 'pack' if args.pack else 'nopack'
                 result_file = f'{pred_root}/{model_name}_{dataset_name}_{args.nframe}frame_{packstr}.xlsx'
-            if dataset_name in ['Video-MME']:
+            else:
                 if args.pack:
-                    logger.info('Video-MME not support Pack Mode, directly change to unpack')
+                    logger.info(f'{dataset_name} not support Pack Mode, directly change to unpack')
                     args.pack = False
                 packstr = 'pack' if args.pack else 'nopack'
-                subtitle_str = 'subs' if args.use_subtitle else 'nosubs'
-                result_file = f'{pred_root}/{model_name}_{dataset_name}_{args.nframe}frame_{packstr}_{subtitle_str}.xlsx'
+                result_file = f'{pred_root}/{model_name}_{dataset_name}_{args.nframe}frame_{packstr}.xlsx'
+                if dataset_name in ['Video-MME']:
+                    subtitlestr = 'subs' if args.use_subtitle else 'nosubs'
+                    result_file = result_file.replace('.xlsx', f'_{subtitlestr}.xlsx')
 
             if dataset.TYPE == 'MT':
                 result_file = result_file.replace('.xlsx', '.tsv')
