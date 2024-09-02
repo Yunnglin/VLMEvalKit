@@ -154,7 +154,7 @@ Select the best answer to the following multiple-choice question based on the vi
         flag = np.all([osp.exists(p) for p in frame_paths])
 
         if not flag:
-            images = [vid[i].asnumpy() for i in indices]
+            images = [vid[i].numpy() for i in indices]
             images = [Image.fromarray(arr) for arr in images]
             for im, pth in zip(images, frame_paths):
                 if not osp.exists(pth):

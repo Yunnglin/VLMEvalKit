@@ -1,10 +1,14 @@
+decord
 gradio
 huggingface_hub
+imageio
 matplotlib
+moviepy
 numpy>=1.23.4
 omegaconf
 openpyxl
 pandas
+peft
 pillow
 portalocker
 python-dotenv
