@@ -1,6 +1,7 @@
 from huggingface_hub import snapshot_download
 from ..smp import *
 from .video_base import VideoBaseDataset
+from .utils import build_judge, DEBUG_MESSAGE
 
 FAIL_MSG = 'Failed to obtain answer via API.'
 
@@ -199,7 +200,7 @@ Select the best answer to the following multiple-choice question based on the vi
     # It returns a dictionary
     @classmethod
     def evaluate(self, eval_file, **judge_kwargs):
-        from .utils.videomme import get_dimension_rating, extract_characters_regex
+        from .utils.videomme import get_dimension_rating, extract_characters_regex, extract_option
 
         assert eval_file.endswith('.xlsx'), 'data file should be an xlsx file'
 
@@ -208,6 +209,20 @@ Select the best answer to the following multiple-choice question based on the vi
         score_file = eval_file.replace('.xlsx', f'_score.xlsx')
 
         if not osp.exists(score_file):
+            model = judge_kwargs.get('model', 'exact_matching')
+            assert model in ['chatgpt-0125', 'exact_matching', 'gpt-4-0125']
+
+            if model == 'exact_matching':
+                model = None
+            elif gpt_key_set():
+                model = build_judge(**judge_kwargs)
+                if not model.working():
+                    warnings.warn('OPENAI API is not working properly, will use exact matching for evaluation')
+                    warnings.warn(DEBUG_MESSAGE)
+                    model = None
+            else:
+                warnings.warn('OPENAI_API_KEY is not set properly, will use exact matching for evaluation')
+                model = None
             res = {} if not osp.exists(tmp_file) else load(tmp_file)
             res = {k: v for k, v in res.items() if FAIL_MSG not in v}
 
@@ -216,10 +231,15 @@ Select the best answer to the following multiple-choice question based on the vi
 
             for idx in data['index']:
                 ans = data.loc[data['index'] == idx, 'answer'].values[0]
-                pred = data.loc[data['index'] == idx, 'prediction'].values[0]
+                pred = str(data.loc[data['index'] == idx, 'prediction'].values[0])
 
-                if extract_characters_regex(pred) == "":
-                    data.loc[idx, 'score'] = -1
+                if extract_characters_regex(pred) == '':
+                    extract_pred = extract_option(
+                        model,
+                        data.loc[data['index'] == idx].to_dict(orient='records')[0],
+                        'Video-MME'
+                    )
+                    data.loc[idx, 'score'] = int(extract_pred == ans)
                 else:
                     data.loc[idx, 'score'] = int(extract_characters_regex(pred) == ans)
 

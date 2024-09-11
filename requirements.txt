@@ -11,6 +11,7 @@ pandas
 peft
 pillow
 portalocker
+protobuf
 python-dotenv
 requests
 rich
