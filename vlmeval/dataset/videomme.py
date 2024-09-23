@@ -29,8 +29,8 @@ def unwrap_hf_pkl(pth, suffix='.mp4'):
 
 class VideoMME(VideoBaseDataset):
 
-    MD5 = '2f16cd40b1c125b67e661e59da2f6cd0'
-    SYS = ""
+    MD5 = '85bdd91f9b29a99354c23b97ab7c113c'
+    SYS = ''
 
     FRAMES_TMPL_NOSUB = """
 These are the frames of a video. Select the best answer to the following multiple-choice question based on the video. Respond with only the letter (A, B, C, or D) of the correct option.
@@ -42,11 +42,12 @@ These are the frames of a video. This video's subtitles are listed below:
 Select the best answer to the following multiple-choice question based on the video. Respond with only the letter (A, B, C, or D) of the correct option.
 """
 
-    TYPE = 'VQA'
+    TYPE = 'Video-MCQ'
 
     def __init__(self, dataset='Video-MME', use_subtitle=False):
         super().__init__(dataset=dataset)
         self.use_subtitle = use_subtitle
+        self.dataset_name = dataset
 
     @classmethod
     def supported_datasets(cls):
@@ -122,12 +123,13 @@ Select the best answer to the following multiple-choice question based on the vi
                 
                 data_file = pd.read_parquet(os.path.join(pth, 'videomme/test-00000-of-00001.parquet'))
                 data_file = data_file.assign(index=range(len(data_file)))
-                data_file["video"] = data_file["videoID"]
-                data_file["video_path"] = data_file["videoID"].apply(lambda x: f'./video/{x}.mp4')
-                data_file["subtitle_path"] = data_file["videoID"].apply(lambda x: f'./subtitle/{x}.srt')
-                data_file["question"] = data_file["question"] + "\n" + data_file["options"].apply(lambda x: "\n".join(x))
+                data_file['video'] = data_file['videoID']
+                data_file['video_path'] = data_file['videoID'].apply(lambda x: f'./video/{x}.mp4')
+                data_file['subtitle_path'] = data_file['videoID'].apply(lambda x: f'./subtitle/{x}.srt')
+                data_file['candidates'] = data_file['options'].apply(lambda x: x.tolist())
 
-                data_file = data_file[["index", "video", "video_path", "duration", "domain", "sub_category", "task_type", "subtitle_path", "question", "answer"]]
+                data_file = data_file[['index', 'video', 'video_path', 'duration', 'domain', 'candidates',
+                                       'sub_category', 'task_type', 'subtitle_path', 'question', 'answer']]
 
                 data_file.to_csv(osp.join(pth, f'{dataset_name}.tsv'), sep='\t', index=False)
 
@@ -155,15 +157,19 @@ Select the best answer to the following multiple-choice question based on the vi
         flag = np.all([osp.exists(p) for p in frame_paths])
 
         if not flag:
-            images = [vid[i].numpy() for i in indices]
+            images = [vid[i].asnumpy() for i in indices]
             images = [Image.fromarray(arr) for arr in images]
             for im, pth in zip(images, frame_paths):
                 if not osp.exists(pth):
                     im.save(pth)
 
         return frame_paths, indices, video_info
-    
-    def build_prompt(self, line, num_frames):
+
+    def save_video_into_images(self, line, num_frames=8):
+        frame_paths, indices, video_info = self.save_video_frames(line['video'], num_frames)
+        return frame_paths
+
+    def build_prompt(self, line, num_frames, video_llm):
         if isinstance(line, int):
             assert line < len(self)
             line = self.data.iloc[line]
@@ -189,9 +195,15 @@ Select the best answer to the following multiple-choice question based on the vi
             subtitles = ""
 
         message = [dict(type='text', value=self.SYS)]
-        for im in frames:
-            message.append(dict(type='image', value=im))
-        message.append(dict(type="text", value=self.FRAMES_TMPL_NOSUB if not self.use_subtitle else self.FRAMES_TMPL_SUB.format(subtitles)))
+        if video_llm:
+            message.append(dict(type='video', value=osp.join(self.data_root, 'video', line['video'] + '.mp4')))
+        else:
+            for im in frames:
+                message.append(dict(type='image', value=im))
+
+        text_prompt = self.FRAMES_TMPL_NOSUB if not self.use_subtitle else self.FRAMES_TMPL_SUB.format(subtitles)
+        message.append(dict(type='text', value=text_prompt))
+        line['question'] += '\n' + '\n'.join(eval(line['candidates']))
         prompt = 'Question: {}\nAnswer: '.format(line['question'])
         message.append(dict(type='text', value=prompt))
         return message
