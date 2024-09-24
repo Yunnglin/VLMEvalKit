@@ -127,7 +127,8 @@ def run_task(args):
                         pack=args.pack,
                         verbose=args.verbose,
                         subtitle=args.use_subtitle,
-                        api_nproc=args.nproc)
+                        api_nproc=args.nproc,
+                        limit=args.limit)
                 elif dataset.TYPE == 'MT':
                     model = infer_data_job_mt(
                         model,

@@ -3,6 +3,7 @@ from ..smp import *
 from .video_base import VideoBaseDataset
 from .utils import build_judge, DEBUG_MESSAGE
 from ..utils import track_progress_rich
+from .utils.mmbench_video import prepare_dataset
 
 
 FAIL_MSG = 'Failed to obtain answer via API.'
@@ -254,3 +255,5 @@ Please directly reply with your response to the only question.
         rating = get_dimension_rating(score_file)
         dump(rating, tgt_file)
         return rating
+
+MMBenchVideo.prepare_dataset = prepare_dataset

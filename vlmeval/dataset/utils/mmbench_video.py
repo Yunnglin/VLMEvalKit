@@ -1,5 +1,6 @@
 from ...smp import *
 import numpy as np
+import os
 
 FAIL_MSG = 'Failed to obtain answer via API.'
 
@@ -68,3 +69,48 @@ def get_dimension_rating(data_path):
 def build_prompt(item):
     tmpl = 'Question: {}\nGroundtruth answer: {}\nCandidate answer: {}\nYour response: '
     return tmpl.format(item['question'], item['answer'], item['prediction'])
+
+
+def unwrap_hf_pkl(pth, suffix='.mp4'):
+    base_dir = os.path.join(pth, 'video_pkl/')
+    target_dir = os.path.join(pth, 'video/')
+    pickle_files = [os.path.join(base_dir, file) for file in os.listdir(base_dir)]
+    pickle_files.sort()
+
+    if not os.path.exists(target_dir):
+        os.makedirs(target_dir, exist_ok=True)
+        for pickle_file in pickle_files:
+            with open(pickle_file, 'rb') as file:
+                video_data = pickle.load(file)
+            # For each video file in the pickle file, write its contents to a new mp4 file
+            for video_name, video_content in video_data.items():
+                output_path = os.path.join(target_dir, f'{video_name}{suffix}')
+                with open(output_path, 'wb') as output_file:
+                    output_file.write(video_content)
+        print('The video file has been restored and stored from the pickle file.')
+    else:
+        print('The video file already exists.')
+
+def prepare_dataset(self, dataset_name='MMBench-Video', repo_id='modelscope/MMBench-Video'):
+
+    def check_integrity(pth):
+        data_file = osp.join(pth, f'{dataset_name}.tsv')
+        if md5(data_file) != self.MD5:
+            return False
+        data = load(data_file)
+        for video_pth in data['video_path']:
+            if not osp.exists(osp.join(pth, video_pth)):
+                return False
+        return True
+
+    dataset_path = os.path.expanduser(f"~/LMUData/{dataset_name}")
+    
+    if not check_integrity(dataset_path):
+        # subprocess.run(['modelscope', 'download', '--dataset', repo_id, '--local_dir', dataset_path])
+        subprocess.run(['git', 'clone', '--depth', '1', '--branch', 'master', f'https://www.modelscope.cn/datasets/{repo_id}.git', dataset_path])
+        unwrap_hf_pkl(dataset_path)
+        
+    self.video_path = osp.join(dataset_path, 'video/')
+    data_file = osp.join(dataset_path, f'{dataset_name}.tsv')
+
+    return dict(data_file=data_file, root=osp.join(dataset_path, 'video'))

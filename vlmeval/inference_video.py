@@ -120,8 +120,11 @@ def infer_data_job_video(
         pack=False,
         verbose=False,
         subtitle=False,
-        api_nproc=4):
-
+        api_nproc=4,
+        limit=None):
+    
+    if limit:
+        dataset.data = dataset.data.iloc[:limit]
     dataset_name = dataset.dataset_name
     packstr = 'pack' if pack else 'nopack'
     rank, world_size = get_rank_and_world_size()

@@ -7,6 +7,7 @@ from ..utils import track_progress_rich
 import torchvision.transforms as T
 from torchvision import transforms
 from torchvision.transforms.functional import InterpolationMode
+from .utils.mvbench import prepare_dataset
 try:
     from decord import VideoReader, cpu
     import imageio
@@ -642,3 +643,5 @@ Based on your observations, select the best option that accurately addresses the
         rating = get_dimension_rating(score_file)
         dump(rating, tgt_file)
         return rating
+
+MVBench.prepare_dataset = prepare_dataset

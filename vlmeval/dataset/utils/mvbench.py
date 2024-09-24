@@ -6,7 +6,9 @@ import random
 import numbers
 import math
 import torch
-
+import torchvision.transforms as T
+from torchvision import transforms
+from torchvision.transforms.functional import InterpolationMode
 
 def get_dimension_rating(data_path):
     data = load(data_path)
@@ -507,3 +509,121 @@ class IdentityTransform(object):
 
     def __call__(self, data):
         return data
+
+
+def prepare_dataset(self, dataset_name='MVBench', repo_id='modelscope/MVBench'):
+    def check_integrity(pth):
+        data_file = osp.join(pth, f'{dataset_name}.tsv')
+
+        if not os.path.exists(data_file):
+            return False
+
+        if md5(data_file) != self.MD5:
+            return False
+
+        data = load(data_file)
+        for idx, item in data.iterrows():
+            if not osp.exists(osp.join(pth, item['prefix'], item['video'])):
+                return False
+        return True
+
+    dataset_path = os.path.expanduser(f"~/LMUData/{dataset_name}")
+    
+    if not check_integrity(dataset_path):
+        def unzip_hf_zip(pth):
+            import zipfile
+            pth = os.path.join(pth, 'video/')
+            for filename in os.listdir(pth):
+                if filename.endswith('.zip'):
+                    # 构建完整的文件路径
+                    zip_path = os.path.join(pth, filename)
+
+                    # 解压 ZIP 文件
+                    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                        zip_ref.extractall(pth)
+
+        def generate_tsv(pth):
+            data_file = osp.join(pth, f'{dataset_name}.tsv')
+            if os.path.exists(data_file) and md5(data_file) == self.MD5:
+                return
+            json_data_dir = os.path.join(dataset_path, 'json')
+            self.data_list = []
+            for k, v in self.type_data_list.items():
+                with open(os.path.join(json_data_dir, v[0]), 'r') as f:
+                    json_data = json.load(f)
+                for data in json_data:
+                    self.data_list.append({
+                        'task_type': k,
+                        'prefix': v[1].replace('your_data_path', os.path.join(dataset_path, 'video')),
+                        'data_type': v[2],
+                        'bound': v[3],
+                        'start': data['start'] if 'start' in data.keys() else None,
+                        'end': data['end'] if 'end' in data.keys() else None,
+                        'video': data['video'],
+                        'question': data['question'],
+                        'answer': data['answer'],
+                        'candidates': data['candidates']
+                    })
+
+            data_df = pd.DataFrame(self.data_list)
+            data_df = data_df.assign(index=range(len(data_df)))
+            data_df.to_csv(data_file, sep='\t', index=False)
+
+        def move_files(pth):
+            src_folder = os.path.join(pth, 'video/data0613')
+            if not os.path.exists(src_folder):
+                return
+            for subdir in os.listdir(src_folder):
+                subdir_path = os.path.join(src_folder, subdir)
+                if os.path.isdir(subdir_path):
+                    for subsubdir in os.listdir(subdir_path):
+                        subsubdir_path = os.path.join(subdir_path, subsubdir)
+                        if os.path.isdir(subsubdir_path):
+                            for item in os.listdir(subsubdir_path):
+                                item_path = os.path.join(subsubdir_path, item)
+                                target_folder = os.path.join(pth, 'video', subdir, subsubdir)
+                                if not os.path.exists(target_folder):
+                                    os.makedirs(target_folder)
+                                target_path = os.path.join(target_folder, item)
+                                try:
+                                    shutil.move(item_path, target_path)
+                                except Exception as e:
+                                    print(f"Error moving {item_path} to {target_path}: {e}")
+
+        # subprocess.run(['modelscope', 'download', '--dataset', repo_id, '--local_dir', dataset_path])
+        subprocess.run(['git', 'clone', '--depth', '1', '--branch', 'master', f'https://www.modelscope.cn/datasets/{repo_id}.git', dataset_path])
+        
+        move_files(dataset_path)
+        unzip_hf_zip(dataset_path)
+        generate_tsv(dataset_path)
+
+    data_file = osp.join(dataset_path, f'{dataset_name}.tsv')
+
+    self.decord_method = {
+        'video': self.read_video,
+        'gif': self.read_gif,
+        'frame': self.read_frame,
+    }
+
+    self.nframe = 8
+    self.resolution = 224
+    self.frame_fps = 3
+
+    # transform
+    crop_size = self.resolution
+    scale_size = self.resolution
+    input_mean = [0.48145466, 0.4578275, 0.40821073]
+    input_std = [0.26862954, 0.26130258, 0.27577711]
+    self.transform = T.Compose([
+        GroupScale(int(scale_size), interpolation=InterpolationMode.BICUBIC),
+        GroupCenterCrop(crop_size),
+        Stack(),
+        ToTorchFormatTensor(),
+        GroupNormalize(input_mean, input_std)
+    ])
+    self.simple_transform = T.Compose([
+        Stack(),
+        ToTorchFormatTensor()
+    ])
+
+    return dict(root=dataset_path, data_file=data_file)

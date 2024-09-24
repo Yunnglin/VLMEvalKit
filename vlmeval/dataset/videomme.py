@@ -2,6 +2,7 @@ from huggingface_hub import snapshot_download
 from ..smp import *
 from .video_base import VideoBaseDataset
 from .utils import build_judge, DEBUG_MESSAGE
+from .utils.videomme import prepare_dataset
 
 FAIL_MSG = 'Failed to obtain answer via API.'
 
@@ -267,3 +268,4 @@ Select the best answer to the following multiple-choice question based on the vi
         dump(rating, tgt_file)
         return rating
 
+VideoMME.prepare_dataset = prepare_dataset

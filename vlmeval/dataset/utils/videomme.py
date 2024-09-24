@@ -147,3 +147,89 @@ def extract_characters_regex(s):
     if matches is None:
         return ""
     return matches[0]
+
+
+def prepare_dataset(self, dataset_name='Video-MME', repo_id='modelscope/Video-MME'):
+    def check_integrity(pth):
+        data_file = osp.join(pth, f'{dataset_name}.tsv')
+
+        if not os.path.exists(data_file):
+            return False
+        
+        if md5(data_file) != self.MD5:
+            return False
+        data = load(data_file)
+        for video_pth in data['video_path']:
+            if not osp.exists(osp.join(pth, video_pth)):
+                return False
+        return True
+
+    dataset_path = os.path.expanduser(f"~/LMUData/{dataset_name}")
+    
+    if not check_integrity(dataset_path):
+        def unzip_hf_zip(pth):
+            import zipfile
+            base_dir = pth
+            target_dir = os.path.join(pth, 'video/')
+            zip_files = [os.path.join(base_dir, file) for file in os.listdir(base_dir) if file.endswith('.zip') and file.startswith('video')]
+            zip_files.sort()
+            
+            if not os.path.exists(target_dir):
+                os.makedirs(target_dir, exist_ok=True)
+                for zip_file in zip_files:
+                    with zipfile.ZipFile(zip_file, 'r') as zip_ref:
+                        for member in zip_ref.namelist():
+                            # Check if the member is a file (not a directory)
+                            if not member.endswith('/'):
+                                # Extract the file to the specified directory
+                                source = zip_ref.open(member)
+                                target = open(os.path.join(target_dir, os.path.basename(member)), "wb")
+                                with source, target:
+                                    target.write(source.read())
+                print('The video file has been restored and stored from the zip file.')
+            else:
+                print('The video file already exists.')
+            
+            subtitle_zip_file = os.path.join(base_dir, 'subtitle.zip')
+            subtitle_target_dir = os.path.join(base_dir, 'subtitle')
+
+            if not os.path.exists(subtitle_target_dir):
+                os.makedirs(subtitle_target_dir, exist_ok=True)
+                with zipfile.ZipFile(subtitle_zip_file, 'r') as zip_ref:
+                    for member in zip_ref.namelist():
+                        # Check if the member is a file (not a directory)
+                        if not member.endswith('/'):
+                            # Extract the file to the specified directory
+                            source = zip_ref.open(member)
+                            target = open(os.path.join(subtitle_target_dir, os.path.basename(member)), "wb")
+                            with source, target:
+                                target.write(source.read())
+                print('The subtitle file has been restored and stored from the zip file.')
+            else:
+                print('The subtitle file already exists.')
+            
+        def generate_tsv(pth):
+
+            data_file = osp.join(pth, f'{dataset_name}.tsv')
+            if os.path.exists(data_file) and md5(data_file) == self.MD5:
+                return
+            
+            data_file = pd.read_parquet(os.path.join(pth, 'videomme/test-00000-of-00001.parquet'))
+            data_file = data_file.assign(index=range(len(data_file)))
+            data_file['video'] = data_file['videoID']
+            data_file['video_path'] = data_file['videoID'].apply(lambda x: f'./video/{x}.mp4')
+            data_file['subtitle_path'] = data_file['videoID'].apply(lambda x: f'./subtitle/{x}.srt')
+            data_file['candidates'] = data_file['options'].apply(lambda x: x.tolist())
+
+            data_file = data_file[['index', 'video', 'video_path', 'duration', 'domain', 'candidates',
+                                    'sub_category', 'task_type', 'subtitle_path', 'question', 'answer']]
+
+            data_file.to_csv(osp.join(pth, f'{dataset_name}.tsv'), sep='\t', index=False)
+
+        subprocess.run(['modelscope', 'download', '--dataset', repo_id, '--local_dir', dataset_path])
+        unzip_hf_zip(dataset_path)
+        generate_tsv(dataset_path)
+
+    data_file = osp.join(dataset_path, f'{dataset_name}.tsv')
+
+    return dict(data_file=data_file, root=dataset_path)
