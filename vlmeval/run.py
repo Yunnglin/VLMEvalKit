@@ -43,7 +43,6 @@ def parse_args():
 def run_task(args):
     logger = get_logger('RUN')
 
-    args = parse_args()
     assert len(args.data), '--data should be a list of data files'
 
     if 'MMEVAL_ROOT' in os.environ:
@@ -128,7 +127,8 @@ def run_task(args):
                         pack=args.pack,
                         verbose=args.verbose,
                         subtitle=args.use_subtitle,
-                        api_nproc=args.nproc)
+                        api_nproc=args.nproc,
+                        limit=args.limit)
                 elif dataset.TYPE == 'MT':
                     model = infer_data_job_mt(
                         model,
