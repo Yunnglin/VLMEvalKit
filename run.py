@@ -17,7 +17,8 @@ def parse_args():
     # Args that only apply to Video Dataset
     parser.add_argument('--nframe', type=int, default=8)
     parser.add_argument('--pack', action='store_true')
-    parser.add_argument('--use_subtitle', action='store_true')
+    parser.add_argument('--use-subtitle', action='store_true')
+    parser.add_argument('--fps', type=float, default=-1)
     # Work Dir
     parser.add_argument('--work-dir', type=str, default='./outputs', help='select the output directory')
     # Infer + Eval or Infer Only
@@ -93,15 +94,25 @@ def run_task(args):
                     continue
 
                 result_file = f'{pred_root}/{model_name}_{dataset_name}.xlsx'
+                if args.fps > 0:  # For Video Dataset, set the fps for priority
+                    if dataset_name == 'MVBench':
+                        raise ValueError('MVBench does not support fps setting, please transfer to MVBench_MP4!')
+                    args.nframe = 0
                 if dataset_name in ['MMBench-Video']:
                     packstr = 'pack' if args.pack else 'nopack'
-                    result_file = f'{pred_root}/{model_name}_{dataset_name}_{args.nframe}frame_{packstr}.xlsx'
+                    if args.nframe > 0:
+                        result_file = f'{pred_root}/{model_name}_{dataset_name}_{args.nframe}frame_{packstr}.xlsx'
+                    else:
+                        result_file = f'{pred_root}/{model_name}_{dataset_name}_{args.fps}fps_{packstr}.xlsx'
                 elif dataset.MODALITY == 'VIDEO':
                     if args.pack:
                         logger.info(f'{dataset_name} not support Pack Mode, directly change to unpack')
                         args.pack = False
                     packstr = 'pack' if args.pack else 'nopack'
-                    result_file = f'{pred_root}/{model_name}_{dataset_name}_{args.nframe}frame_{packstr}.xlsx'
+                    if args.nframe > 0:
+                        result_file = f'{pred_root}/{model_name}_{dataset_name}_{args.nframe}frame_{packstr}.xlsx'
+                    else:
+                        result_file = f'{pred_root}/{model_name}_{dataset_name}_{args.fps}fps_{packstr}.xlsx'
                     if dataset_name in ['Video-MME']:
                         subtitlestr = 'subs' if args.use_subtitle else 'nosubs'
                         result_file = result_file.replace('.xlsx', f'_{subtitlestr}.xlsx')
@@ -128,7 +139,8 @@ def run_task(args):
                         verbose=args.verbose,
                         subtitle=args.use_subtitle,
                         api_nproc=args.nproc,
-                        limit=args.limit)
+                        limit=args.limit,
+                        fps=args.fps)
                 elif dataset.TYPE == 'MT':
                     model = infer_data_job_mt(
                         model,
@@ -191,6 +203,9 @@ def run_task(args):
                         logger.info(f'The results are saved in {result_file}. '
                                     f'Please send it to the AesBench Team via huangyipo@hotmail.com.')  # noqa: E501
                         continue
+                    elif dataset_name in ['DocVQA_TEST', 'InfoVQA_TEST', 'Q-Bench1_TEST', 'A-Bench_TEST']:
+                        logger.info(f'{dataset_name} is a test split without ground-truth. '
+                                    'Thus only the inference part is supported for those datasets. ')  # noqa: E501
 
                 if dataset_name in [
                     'MMBench_TEST_CN', 'MMBench_TEST_EN', 'MMBench', 'MMBench_CN',
