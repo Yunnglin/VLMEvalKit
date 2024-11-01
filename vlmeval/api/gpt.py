@@ -47,6 +47,7 @@ class OpenAIWrapper(BaseAPI):
                  img_size: int = 512,
                  img_detail: str = 'low',
                  use_azure: bool = False,
+                 VIDEO_LLM: bool = False,
                  **kwargs):
 
         self.model = model
@@ -55,6 +56,7 @@ class OpenAIWrapper(BaseAPI):
         self.max_tokens = max_tokens
         self.temperature = temperature
         self.use_azure = use_azure
+        self.VIDEO_LLM = VIDEO_LLM
 
         if 'step-1v' in model:
             env_key = os.environ.get('STEPAI_API_KEY', '')
@@ -136,7 +138,7 @@ class OpenAIWrapper(BaseAPI):
     # content can be a string or a list of image & text
     def prepare_itlist(self, inputs):
         assert np.all([isinstance(x, dict) for x in inputs])
-        has_images = np.sum([x['type'] == 'image' for x in inputs])
+        has_images = np.sum([x['type'] in ['image', 'video'] for x in inputs])
         if has_images:
             content_list = []
             for msg in inputs:
@@ -148,6 +150,9 @@ class OpenAIWrapper(BaseAPI):
                     b64 = encode_image_to_base64(img, target_size=self.img_size)
                     img_struct = dict(url=f'data:image/jpeg;base64,{b64}', detail=self.img_detail)
                     content_list.append(dict(type='image_url', image_url=img_struct))
+                elif msg['type'] == 'video':
+                    video_struct = dict(url=msg['value'])
+                    content_list.append(dict(type='video_url', video_url=video_struct))
         else:
             assert all([x['type'] == 'text' for x in inputs])
             text = '\n'.join([x['value'] for x in inputs])
@@ -239,7 +244,7 @@ class OpenAIWrapper(BaseAPI):
         try:
             enc = tiktoken.encoding_for_model(self.model)
         except Exception as err:
-            self.logger.warning(f'{type(err)}: {err}')
+            # self.logger.warning(f'{type(err)}: {err}')
             enc = tiktoken.encoding_for_model('gpt-4')
         assert isinstance(inputs, list)
         tot = 0
