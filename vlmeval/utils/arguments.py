@@ -21,7 +21,7 @@ class Arguments:
     judge: Optional[str] = None
     verbose: bool = False
     ignore: bool = False
-    rerun: bool = False
+    reuse: bool = False
     limit: Optional[int] = None
 
     # For OpenAI API
