@@ -23,6 +23,7 @@ class Arguments:
     ignore: bool = False
     reuse: bool = False
     limit: Optional[int] = None
+    config: Optional[str] = None
 
     # For OpenAI API
     OPENAI_API_KEY: str = "EMPTY"

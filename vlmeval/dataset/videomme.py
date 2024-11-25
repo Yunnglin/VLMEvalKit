@@ -2,7 +2,6 @@ from huggingface_hub import snapshot_download
 from ..smp import *
 from .video_base import VideoBaseDataset
 from .utils import build_judge, DEBUG_MESSAGE
-from .utils.videomme import prepare_dataset
 
 FAIL_MSG = 'Failed to obtain answer via API.'
 
@@ -53,7 +52,7 @@ Select the best answer to the following multiple-choice question based on the vi
     @classmethod
     def supported_datasets(cls):
         return ['Video-MME']
-    
+
     def prepare_dataset(self, dataset_name='Video-MME', repo_id='lmms-lab/Video-MME'):
 
         def check_integrity(pth):
@@ -61,7 +60,7 @@ Select the best answer to the following multiple-choice question based on the vi
 
             if not os.path.exists(data_file):
                 return False
-            
+
             if md5(data_file) != self.MD5:
                 return False
             data = load(data_file)
@@ -81,7 +80,7 @@ Select the best answer to the following multiple-choice question based on the vi
                 target_dir = os.path.join(pth, 'video/')
                 zip_files = [os.path.join(base_dir, file) for file in os.listdir(base_dir) if file.endswith('.zip') and file.startswith('video')]
                 zip_files.sort()
-                
+
                 if not os.path.exists(target_dir):
                     os.makedirs(target_dir, exist_ok=True)
                     for zip_file in zip_files:
@@ -97,7 +96,7 @@ Select the best answer to the following multiple-choice question based on the vi
                     print('The video file has been restored and stored from the zip file.')
                 else:
                     print('The video file already exists.')
-                
+
                 subtitle_zip_file = os.path.join(base_dir, 'subtitle.zip')
                 subtitle_target_dir = os.path.join(base_dir, 'subtitle')
 
@@ -115,13 +114,13 @@ Select the best answer to the following multiple-choice question based on the vi
                     print('The subtitle file has been restored and stored from the zip file.')
                 else:
                     print('The subtitle file already exists.')
-                
+
             def generate_tsv(pth):
 
                 data_file = osp.join(pth, f'{dataset_name}.tsv')
                 if os.path.exists(data_file) and md5(data_file) == self.MD5:
                     return
-                
+
                 data_file = pd.read_parquet(os.path.join(pth, 'videomme/test-00000-of-00001.parquet'))
                 data_file = data_file.assign(index=range(len(data_file)))
                 data_file['video'] = data_file['videoID']
@@ -193,7 +192,7 @@ Select the best answer to the following multiple-choice question based on the vi
             subs = pysubs2.load(osp.join(self.data_root, line["subtitle_path"]), encoding="utf-8")
             subtitles = []
 
-            for seleced_frame_id in indices:    
+            for seleced_frame_id in indices:
                 sub_text = ""
                 cur_time = pysubs2.make_time(fps=video_info["fps"], frames=seleced_frame_id)
                 for sub in subs:
@@ -219,7 +218,7 @@ Select the best answer to the following multiple-choice question based on the vi
         prompt = 'Question: {}\nAnswer: '.format(line['question'])
         message.append(dict(type='text', value=prompt))
         return message
-    
+
 
     # It returns a dictionary
     @classmethod
@@ -278,5 +277,3 @@ Select the best answer to the following multiple-choice question based on the vi
         rating = get_dimension_rating(score_file)
         dump(rating, tgt_file)
         return rating
-
-VideoMME.prepare_dataset = prepare_dataset

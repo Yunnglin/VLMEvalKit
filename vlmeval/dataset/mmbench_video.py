@@ -3,7 +3,6 @@ from ..smp import *
 from .video_base import VideoBaseDataset
 from .utils import build_judge, DEBUG_MESSAGE
 from ..utils import track_progress_rich
-from .utils.mmbench_video import prepare_dataset
 
 
 FAIL_MSG = 'Failed to obtain answer via API.'
@@ -62,7 +61,7 @@ Please directly reply with your response to the only question.
 
     def __init__(self, dataset='MMBench-Video', pack=False):
         super().__init__(dataset=dataset, pack=pack)
-    
+
     @classmethod
     def supported_datasets(cls):
         return ['MMBench-Video']
@@ -259,5 +258,3 @@ Please directly reply with your response to the only question.
         rating = get_dimension_rating(score_file)
         dump(rating, tgt_file)
         return rating
-
-MMBenchVideo.prepare_dataset = prepare_dataset

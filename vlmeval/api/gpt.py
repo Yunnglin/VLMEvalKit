@@ -47,7 +47,7 @@ class OpenAIWrapper(BaseAPI):
                  img_size: int = 512,
                  img_detail: str = 'low',
                  use_azure: bool = False,
-                 VIDEO_LLM: bool = False,
+                 video_llm: bool = False,
                  **kwargs):
 
         self.model = model
@@ -56,7 +56,7 @@ class OpenAIWrapper(BaseAPI):
         self.max_tokens = max_tokens
         self.temperature = temperature
         self.use_azure = use_azure
-        self.VIDEO_LLM = VIDEO_LLM
+        self.VIDEO_LLM = video_llm
 
         if 'step-1v' in model:
             env_key = os.environ.get('STEPAI_API_KEY', '')
@@ -244,7 +244,7 @@ class OpenAIWrapper(BaseAPI):
         import tiktoken
         try:
             enc = tiktoken.encoding_for_model(self.model)
-        except Exception as err:
+        except Exception:
             # self.logger.warning(f'{type(err)}: {err}')
             enc = tiktoken.encoding_for_model('gpt-4')
         assert isinstance(inputs, list)
@@ -263,8 +263,8 @@ class GPT4V(OpenAIWrapper):
 
     def generate(self, message, dataset=None):
         return super(GPT4V, self).generate(message)
-    
-    
+
+
 class CustomAPIModel(OpenAIWrapper):
     def generate(self, message, dataset=None):
         return super(CustomAPIModel, self).generate(message)
