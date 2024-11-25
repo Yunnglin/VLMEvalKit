@@ -122,7 +122,7 @@ You can launch the evaluation by setting either --data and --model or --config.
     parser.add_argument('--ignore', action='store_true', help='Ignore failed indices. ')
     # Reuse: will reuse the existing prediction files
     parser.add_argument('--reuse', action='store_true')
-    # Limit 
+    # Limit
     parser.add_argument('--limit', type=int, default=None, help='limit the number of data to be evaluated')
     args = parser.parse_args()
     return args
@@ -424,7 +424,6 @@ def run_task(args):
             if world_size > 1:
                 dist.barrier()
 
-
     if world_size > 1:
         dist.destroy_process_group()
 
@@ -433,7 +432,7 @@ def main():
     args = parse_args()
     assert len(args.data), '--data should be a list of data files'
     run_task(args)
-    
+
 
 if __name__ == '__main__':
     load_env()
