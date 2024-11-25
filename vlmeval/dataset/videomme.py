@@ -134,7 +134,11 @@ Select the best answer to the following multiple-choice question based on the vi
 
                 data_file.to_csv(osp.join(pth, f'{dataset_name}.tsv'), sep='\t', index=False)
 
-            dataset_path = snapshot_download(repo_id=repo_id, repo_type='dataset', cache_dir=".")
+            if modelscope_flag_set():
+                from modelscope import dataset_snapshot_download
+                dataset_path = dataset_snapshot_download(dataset_id=repo_id)
+            else:
+                dataset_path = snapshot_download(repo_id=repo_id, repo_type='dataset')
             unzip_hf_zip(dataset_path)
             generate_tsv(dataset_path)
 
