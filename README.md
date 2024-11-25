@@ -38,7 +38,7 @@ English | [简体中文](/docs/zh-CN/README_zh-CN.md) | [日本語](/docs/ja/REA
 
 ## 🏗️ QuickStart
 
-See [[QuickStart](/docs/en/get_started/Quickstart.md) | [快速开始](/docs/zh-CN/get_started/Quickstart.md)] for a quick start guide.
+See [[QuickStart](/docs/en/Quickstart.md) | [快速开始](/docs/zh-CN/Quickstart.md)] for a quick start guide.
 
 ## 📊 Datasets, Models, and Evaluation Results
 
@@ -84,6 +84,7 @@ See [[QuickStart](/docs/en/get_started/Quickstart.md) | [快速开始](/docs/zh-
 | **[GQA](https://cs.stanford.edu/people/dorarad/gqa/about.html)**+ | GQA_TestDev_Balanced | VQA | **[MIA-Bench](https://arxiv.org/abs/2407.01509)**+ | MIA-Bench | VQA |
 | **[WildVision](https://huggingface.co/datasets/WildVision/wildvision-bench)**+ | WildVision | VQA | **[OlympiadBench](https://github.com/OpenBMB/OlympiadBench)**+ | OlympiadBench | VQA |
 | **[MM-Math](https://github.com/kge-sun/mm-math)**+ | MM-Math | VQA | **[Dynamath](https://huggingface.co/datasets/DynaMath/DynaMath_Sample)** | DynaMath | VQA |
+| **[MMGenBench](https://mmgenbench.alsoai.com/)**- | MMGenBench-Test<br>MMGenBench-Domain | - |  |  |  |
 
 **\*** We only provide a subset of the evaluation results, since some VLMs do not yield reasonable results under the zero-shot setting
 
@@ -111,6 +112,7 @@ VLMEvalKit will use a **judge LLM** to extract answer from the output if you set
 | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------- |
 | [**Reka-[Edge / Flash / Core]**](https://www.reka.ai)🚅       | [**Qwen-VL-[Plus / Max]**](https://huggingface.co/spaces/Qwen/Qwen-VL-Max) 🎞️🚅<br>[**Qwen-VL-[Plus / Max]-0809**](https://huggingface.co/spaces/Qwen/Qwen-VL-Max) 🎞️🚅 | [**Claude3-[Haiku / Sonnet / Opus]**](https://www.anthropic.com/news/claude-3-family) 🎞️🚅 | [**GLM-4v**](https://open.bigmodel.cn/dev/howuse/glm4v) 🚅    | [**CongRong**](https://mllm.cloudwalk.com/web) 🎞️🚅 |
 | [**Claude3.5-Sonnet (20240620, 20241022)**](https://www.anthropic.com/news/claude-3-5-sonnet) 🎞️🚅 | [**GPT-4o-Mini**](https://openai.com/index/gpt-4o-mini-advancing-cost-efficient-intelligence/) 🎞️🚅 | [**Yi-Vision**](https://platform.lingyiwanwu.com)🎞️🚅          | [**Hunyuan-Vision**](https://cloud.tencent.com/document/product/1729)🎞️🚅 | [**BlueLM-V**](https://developers.vivo.com/) 🎞️🚅   |
+| [**TeleMM**](https://cloud.siliconflow.cn/playground/chat/17885302607)🎞️🚅                                                 |
 
 **Supported PyTorch / HF Models**
 
@@ -179,7 +181,7 @@ print(ret)  # There are two apples in the provided images.
 
 ## 🛠️ Development Guide
 
-To develop custom benchmarks, VLMs, or simply contribute other codes to **VLMEvalKit**, please refer to [[Development_Guide](/docs/en/advanced_guides/Development.md) | [开发指南](/docs/zh-CN/advanced_guides/Development.md)].
+To develop custom benchmarks, VLMs, or simply contribute other codes to **VLMEvalKit**, please refer to [[Development_Guide](/docs/en/Development.md) | [开发指南](/docs/zh-CN/Development.md)].
 
 **Call for contributions**
 
@@ -188,7 +190,7 @@ To promote the contribution from the community and share the corresponding credi
 - All Contributions will be acknowledged in the report.
 - Contributors with 3 or more major contributions (implementing an MLLM, benchmark, or major feature) can join the author list of [VLMEvalKit Technical Report](https://www.arxiv.org/abs/2407.11691) on ArXiv. Eligible contributors can create an issue or dm kennyutc in [VLMEvalKit Discord Channel](https://discord.com/invite/evDT4GZmxN).
 
-Here is a [contributor list](/docs/en/advanced_guides/Contributors.md) we curated based on the records.
+Here is a [contributor list](/docs/en/Contributors.md) we curated based on the records.
 
 ## 🎯 The Goal of VLMEvalKit
 
