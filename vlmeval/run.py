@@ -168,7 +168,8 @@ def run_task(args):
         date, commit_id = timestr('day'), githash(digits=8)
         eval_id = f"T{date}_G{commit_id}"
 
-        pred_root = osp.join(args.work_dir, model_name, eval_id)
+        # pred_root = osp.join(args.work_dir, model_name, eval_id)
+        pred_root = osp.join(args.work_dir, model_name)
         pred_root_meta = osp.join(args.work_dir, model_name)
         os.makedirs(pred_root_meta, exist_ok=True)
 
@@ -327,15 +328,15 @@ def run_task(args):
                 if args.judge is not None:
                     judge_kwargs['model'] = args.judge
                 else:
-                    if dataset.TYPE in ['MCQ', 'Y/N'] or listinstr(['MathVerse'], dataset_name):
+                    if dataset.TYPE in ['MCQ', 'Y/N']:
                         judge_kwargs['model'] = 'chatgpt-0125'
-                    elif listinstr(['MMVet', 'MathVista', 'LLaVABench', 'MMBench-Video', 'MathVision'],
-                                   dataset_name):
+                    elif listinstr(['MMVet', 'LLaVABench', 'MMBench-Video'], dataset_name):
                         judge_kwargs['model'] = 'gpt-4-turbo'
-                    elif listinstr([
-                        'MMLongBench', 'MMDU', 'DUDE', 'SLIDEVQA', 'MIA-Bench', 'WildVision'
-                    ], dataset_name):
+                    elif listinstr(['MathVista', 'MathVerse', 'MathVision', 'DynaMath'], dataset_name):
+                        judge_kwargs['model'] = 'gpt-4o-mini'
+                    elif listinstr(['MMLongBench', 'MMDU', 'DUDE', 'SLIDEVQA', 'MIA-Bench', 'WildVision'], dataset_name):  # noqa: E501
                         judge_kwargs['model'] = 'gpt-4o'
+
                 if rank == 0:
                     logger.info(judge_kwargs)
 
@@ -406,15 +407,15 @@ def run_task(args):
                         proxy_set(old_proxy)
 
                     # Create the symbolic links for the prediction files
-                    files = os.listdir(pred_root)
-                    files = [x for x in files if f'{model_name}_{dataset_name}' in x]
-                    for f in files:
-                        cwd = os.getcwd()
-                        file_addr = osp.join(cwd, pred_root, f)
-                        link_addr = osp.join(cwd, pred_root_meta, f)
-                        if osp.exists(link_addr) or osp.islink(link_addr):
-                            os.remove(link_addr)
-                        os.symlink(file_addr, link_addr)
+                    # files = os.listdir(pred_root)
+                    # files = [x for x in files if f'{model_name}_{dataset_name}' in x]
+                    # for f in files:
+                    #     cwd = os.getcwd()
+                    #     file_addr = osp.join(cwd, pred_root, f)
+                    #     link_addr = osp.join(cwd, pred_root_meta, f)
+                    #     if osp.exists(link_addr) or osp.islink(link_addr):
+                    #         os.remove(link_addr)
+                    #     os.symlink(file_addr, link_addr)
 
             except Exception as e:
                 logger.exception(f'Model {model_name} x Dataset {dataset_name} combination failed: {e}, '
