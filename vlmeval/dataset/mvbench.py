@@ -7,22 +7,15 @@ from ..utils import track_progress_rich
 import torchvision.transforms as T
 from torchvision import transforms
 from torchvision.transforms.functional import InterpolationMode
+from decord import VideoReader, cpu
+import imageio
+import cv2
+import zipfile
+import os
+import glob
+from .utils.mvbench import *
 
-try:
-    from decord import VideoReader, cpu
-    import imageio
-    import cv2
-    import zipfile
-    import os
-    import glob
-    from moviepy.editor import VideoFileClip, ImageSequenceClip
-    import moviepy.config_defaults
-    from .utils.mvbench import *
-
-    FAIL_MSG = 'Failed to obtain answer via API.'
-    moviepy.config_defaults.LOGGER_LEVEL = logging.CRITICAL + 1
-except ImportError:
-    print('Please install moviepy and imageio to use MVBench dataset.')
+FAIL_MSG = 'Failed to obtain answer via API.'
 
 
 class MVBench(VideoBaseDataset):
@@ -195,22 +188,10 @@ Based on your observations, select the best option that accurately addresses the
         }
 
         self.nframe = 8
-        self.resolution = 224
         self.frame_fps = 3
 
         # transform
-        crop_size = self.resolution
-        scale_size = self.resolution
-        input_mean = [0.48145466, 0.4578275, 0.40821073]
-        input_std = [0.26862954, 0.26130258, 0.27577711]
         self.transform = T.Compose([
-            GroupScale(int(scale_size), interpolation=InterpolationMode.BICUBIC),
-            GroupCenterCrop(crop_size),
-            Stack(),
-            ToTorchFormatTensor(),
-            GroupNormalize(input_mean, input_std)
-        ])
-        self.simple_transform = T.Compose([
             Stack(),
             ToTorchFormatTensor()
         ])
@@ -298,6 +279,12 @@ Based on your observations, select the best option that accurately addresses the
         return question, answer
 
     def load_into_video_and_process(self, line):
+        try:
+            from moviepy.editor import VideoFileClip, ImageSequenceClip
+        except:
+            raise ImportError(
+                'MoviePy is not installed, please install it by running "pip install moviepy==1.0.3"'
+            )
         video_path = os.path.join(self.data_root, line['prefix'], line['video'])
 
         if line['data_type'] in ['gif'] or os.path.splitext(video_path)[1] in ['.webm']:
@@ -397,7 +384,7 @@ Based on your observations, select the best option that accurately addresses the
             data = load(eval_file)
             data_un = data[~pd.isna(data['prediction'])]
 
-            for idx in data['index']:
+            for idx in data_un['index']:
                 ans = data.loc[data['index'] == idx, 'answer'].values[0]
                 pred = data.loc[data['index'] == idx, 'prediction'].values[0]
                 options = eval(data.loc[data['index'] == idx, 'candidates'].values[0])
@@ -509,21 +496,9 @@ Based on your observations, select the best option that accurately addresses the
         data_file = osp.join(dataset_path, f'{dataset_name}.tsv')
 
         self.nframe = 8
-        self.resolution = 224
 
         # transform
-        crop_size = self.resolution
-        scale_size = self.resolution
-        input_mean = [0.48145466, 0.4578275, 0.40821073]
-        input_std = [0.26862954, 0.26130258, 0.27577711]
         self.transform = T.Compose([
-            GroupScale(int(scale_size), interpolation=InterpolationMode.BICUBIC),
-            GroupCenterCrop(crop_size),
-            Stack(),
-            ToTorchFormatTensor(),
-            GroupNormalize(input_mean, input_std)
-        ])
-        self.simple_transform = T.Compose([
             Stack(),
             ToTorchFormatTensor()
         ])
@@ -654,7 +629,7 @@ Based on your observations, select the best option that accurately addresses the
             data = load(eval_file)
             data_un = data[~pd.isna(data['prediction'])]
 
-            for idx in data['index']:
+            for idx in data_un['index']:
                 ans = data.loc[data['index'] == idx, 'answer'].values[0]
                 pred = data.loc[data['index'] == idx, 'prediction'].values[0]
                 options = eval(data.loc[data['index'] == idx, 'candidates'].values[0])
