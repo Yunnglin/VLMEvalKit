@@ -24,6 +24,7 @@ class Arguments:
     reuse: bool = False
     limit: Optional[int] = None
     config: Optional[str] = None
+    judge_args: Optional[str] = None
 
     # For OpenAI API
     OPENAI_API_KEY: str = "EMPTY"

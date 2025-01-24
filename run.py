@@ -133,7 +133,7 @@ You can launch the evaluation by setting either --data and --model or --config.
     # Infer + Eval or Infer Only
     parser.add_argument('--mode', type=str, default='all', choices=['all', 'infer'])
     # API Kwargs, Apply to API VLMs and Judge API LLMs
-    parser.add_argument('--api-nproc', type=int, default=4, help='Parallel API calling')
+    parser.add_argument('--nproc', type=int, default=4, help='Parallel API calling')
     parser.add_argument('--retry', type=int, default=None, help='retry numbers for API VLMs')
     parser.add_argument('--judge-args', type=str, default=None, help='Judge arguments in JSON format')
     # Explicitly Set the Judge Model
@@ -300,7 +300,7 @@ def run_task(args):
                         model_name=model_name,
                         dataset=dataset,
                         verbose=args.verbose,
-                        api_nproc=args.api_nproc,
+                        api_nproc=args.nproc,
                         ignore_failed=args.ignore)
                 else:
                     model = infer_data_job(
@@ -316,7 +316,7 @@ def run_task(args):
                 # Set the judge kwargs first before evaluation or dumping
 
                 judge_kwargs = {
-                    'nproc': args.api_nproc,
+                    'nproc': args.nproc,
                     'verbose': args.verbose,
                     'retry': args.retry if args.retry is not None else 3,
                     **(json.loads(args.judge_args) if args.judge_args else {}),
