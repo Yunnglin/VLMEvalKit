@@ -81,7 +81,8 @@ def MME_rating(data_file):
     for sc, cate_list in super_cates.items():
         base = 0
         for c in cate_list:
-            base += scores[c]
+            if c in scores:
+                base += scores[c]
         ret[sc] = base
     ret.update(scores)
     ret = d2df(ret)

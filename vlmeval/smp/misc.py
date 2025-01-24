@@ -210,7 +210,7 @@ def load_env():
     pth = osp.join(pth, '../.env')
     pth = osp.realpath(pth)
     if not osp.exists(pth):
-        logging.error(f'Did not detect the .env file at {pth}, failed to load. ')
+        logging.info(f'Did not detect the .env file at {pth}, don\'t load. ')
         return
 
     from dotenv import dotenv_values
