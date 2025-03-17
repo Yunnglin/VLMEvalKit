@@ -230,7 +230,7 @@ def run_task(args):
                         logger.error(f'Dataset {dataset_name} is not valid, will be skipped. ')
                         continue
                 else:
-                    dataset_kwargs = {}
+                    dataset_kwargs = vars(args)
                     if dataset_name in ['MMLongBench_DOC', 'DUDE', 'DUDE_MINI', 'SLIDEVQA', 'SLIDEVQA_MINI']:
                         dataset_kwargs['model'] = model_name
 
