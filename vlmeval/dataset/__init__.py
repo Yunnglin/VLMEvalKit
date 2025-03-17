@@ -1,3 +1,4 @@
+import inspect
 import warnings
 
 from .image_base import img_root_map, ImageBaseDataset
@@ -224,7 +225,9 @@ def build_dataset(dataset_name, **kwargs):
         if dataset_name in supported_video_datasets:
             return supported_video_datasets[dataset_name](**kwargs)
         elif dataset_name in cls.supported_datasets():
-            return cls(dataset=dataset_name, **kwargs)
+            init_params = inspect.signature(cls.__init__).parameters
+            filtered_kwargs = {k: v for k, v in kwargs.items() if k in init_params}
+            return cls(dataset=dataset_name, **filtered_kwargs)
 
     warnings.warn(f'Dataset {dataset_name} is not officially supported. ')
 
