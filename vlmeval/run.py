@@ -347,12 +347,16 @@ def run_task(args):
                             judge_kwargs['model'] = 'gpt-4o-mini'
                         else:
                             judge_kwargs['model'] = 'chatgpt-0125'
-                    elif listinstr(['MMVet', 'LLaVABench', 'MMBench-Video'], dataset_name):
+                    elif listinstr(['MMVet', 'LLaVABench', 'MMBench_Video'], dataset_name):
                         judge_kwargs['model'] = 'gpt-4-turbo'
                     elif listinstr(['MathVista', 'MathVerse', 'MathVision', 'DynaMath', 'VL-RewardBench', 'LogicVista', 'MOAT'], dataset_name):  # noqa: E501
                         judge_kwargs['model'] = 'gpt-4o-mini'
                     elif listinstr(['MMLongBench', 'MMDU', 'DUDE', 'SLIDEVQA', 'MIA-Bench', 'WildVision', 'MMAlignBench'], dataset_name):  # noqa: E501
                         judge_kwargs['model'] = 'gpt-4o'
+                    elif listinstr(['VDC'], dataset_name):
+                        judge_kwargs['model'] = 'llama31-8b'
+                    elif listinstr(['VideoMMLU_QA', 'VideoMMLU_CAP'], dataset_name):
+                        judge_kwargs['model'] = 'qwen-72b'
 
                 if rank == 0:
                     logger.info(judge_kwargs)
