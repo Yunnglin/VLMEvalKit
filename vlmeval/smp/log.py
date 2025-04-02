@@ -31,10 +31,10 @@ def get_logger(name, log_file=None, log_level=logging.INFO, file_mode='w'):
         file_handler = logging.FileHandler(log_file, file_mode)
         handlers.append(file_handler)
 
-    formatter = logging.Formatter(
-        '[%(asctime)s] %(levelname)s - %(name)s - %(filename)s: %(funcName)s - %(lineno)d: %(message)s')
+    # formatter = logging.Formatter(
+    #     '[%(asctime)s] %(levelname)s - %(name)s - %(filename)s: %(funcName)s - %(lineno)d: %(message)s')
     for handler in handlers:
-        handler.setFormatter(formatter)
+        # handler.setFormatter(formatter)
         handler.setLevel(log_level)
         logger.addHandler(handler)
 

@@ -244,13 +244,16 @@ def build_dataset(dataset_name, **kwargs):
     if 'A' in data and 'B' in data:
         if 'image' in data or 'image_path' in data:
             warnings.warn(f'Will assume unsupported dataset {dataset_name} as a Custom MCQ dataset. ')
-            return CustomMCQDataset(dataset=dataset_name, **kwargs)
+            cls = CustomMCQDataset
         else:
             warnings.warn(f'Will assume unsupported dataset {dataset_name} as a Custom Text MCQ dataset. ')
-            return CustomTextMCQDataset(dataset=dataset_name, **kwargs)
+            cls = CustomTextMCQDataset
     else:
         warnings.warn(f'Will assume unsupported dataset {dataset_name} as a Custom VQA dataset. ')
-        return CustomVQADataset(dataset=dataset_name, **kwargs)
+        cls = CustomVQADataset
+    init_params = inspect.signature(cls.__init__).parameters
+    filtered_kwargs = {k: v for k, v in kwargs.items() if k in init_params}
+    return cls(dataset=dataset_name, **filtered_kwargs)
 
 
 __all__ = [
