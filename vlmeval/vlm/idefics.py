@@ -4,6 +4,7 @@ import warnings
 from .base import BaseModel
 from ..smp import splitlen, listinstr
 from PIL import Image
+from transformers.image_utils import load_image
 
 
 class IDEFICS(BaseModel):
@@ -61,7 +62,6 @@ class IDEFICS2(BaseModel):
 
     def __init__(self, model_path='HuggingFaceM4/idefics2-8b', **kwargs):
         from transformers import AutoProcessor, AutoModelForVision2Seq
-        from transformers.image_utils import load_image
         assert model_path is not None
         self.model_path = model_path
         if 'Idefics3' in self.model_path.lower():
@@ -72,8 +72,8 @@ class IDEFICS2(BaseModel):
             model_path,
             torch_dtype=torch.bfloat16,
             _attn_implementation='flash_attention_2',
-            device_map='cpu')
-        self.model = model.to('cuda')
+            device_map='auto')
+        self.model = model
 
         kwargs_default = {'max_new_tokens': 1024}
         kwargs_default.update(kwargs)

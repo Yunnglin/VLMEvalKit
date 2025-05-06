@@ -1,6 +1,6 @@
 from .gpt import OpenAIWrapper, GPT4V, CustomAPIModel
 from .hf_chat_model import HFChatModel
-from .gemini import GeminiWrapper, GeminiProVision
+from .gemini import GeminiWrapper, Gemini
 from .qwen_vl_api import QwenVLWrapper, QwenVLAPI, Qwen2VLAPI
 from .qwen_api import QwenAPI
 from .claude import Claude_Wrapper, Claude3V
@@ -21,7 +21,7 @@ from .mug_u import MUGUAPI
 
 __all__ = [
     'OpenAIWrapper', 'HFChatModel', 'GeminiWrapper',
-    'GPT4V', 'GeminiProVision', 'QwenVLWrapper', 'QwenVLAPI',
+    'GPT4V', 'Gemini', 'QwenVLWrapper', 'QwenVLAPI',
     'QwenAPI', 'Claude3V', 'Claude_Wrapper', 'Reka', 'GLMVisionAPI',
     'CWWrapper', 'SenseChatVisionAPI', 'CustomAPIModel', 'HunyuanVision', 'Qwen2VLAPI',
     'BlueLMWrapper', 'BlueLM_V_API', 'JTVLChatAPI', 'bailingMMAPI',

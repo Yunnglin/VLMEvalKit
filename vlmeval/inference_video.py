@@ -48,7 +48,7 @@ def infer_data_api(model, work_dir, model_name, dataset, samples_dict={}, api_np
     return res
 
 
-def infer_data(model, model_name, work_dir, dataset, out_file, verbose=False, api_nproc=4):
+def infer_data(model, model_name, work_dir, dataset, out_file, verbose=False, api_nproc=4, use_vllm=False):
     res = load(out_file) if osp.exists(out_file) else {}
     rank, world_size = get_rank_and_world_size()
     dataset_name = dataset.dataset_name
@@ -62,7 +62,14 @@ def infer_data(model, model_name, work_dir, dataset, out_file, verbose=False, ap
         return model
     sample_indices_subrem = [x for x in sample_indices_sub if x not in res]
 
-    model = supported_VLM[model_name]() if isinstance(model, str) else model
+    kwargs = {}
+    if model_name is not None and (
+        'Llama-4' in model_name
+        or 'Qwen2-VL' in model_name
+        or 'Qwen2.5-VL' in model_name
+    ):
+        kwargs = {'use_vllm': use_vllm}
+    model = supported_VLM[model_name](**kwargs) if isinstance(model, str) else model
 
     is_api = getattr(model, 'is_api', False)
     if is_api:
@@ -140,7 +147,8 @@ def infer_data_job_video(
         subtitle=False,
         api_nproc=4,
         limit=None,
-        fps=-1):
+        fps=-1,
+        use_vllm=False):
     
     if limit:
         dataset.data = dataset.data.iloc[:limit]
@@ -161,7 +169,8 @@ def infer_data_job_video(
         dataset=dataset,
         out_file=out_file,
         verbose=verbose,
-        api_nproc=api_nproc)
+        api_nproc=api_nproc,
+        use_vllm=use_vllm)
 
     if world_size > 1:
         dist.barrier()

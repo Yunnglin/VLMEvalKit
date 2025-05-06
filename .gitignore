@@ -170,6 +170,7 @@ outputs/*
 .idea/
 demo.ipynb
 *json
+!vlmeval/dataset/utils/vgrpbench/configs/formating-prompt/**/*.json
 .vscode
 *.swp
 GPT4o_MINI/
@@ -190,6 +191,7 @@ DoubaoVL
 arch
 BlueLM*
 mmb_*
+gpt-4.1*
 Reka*
 Taiyi
 TeleMM
@@ -197,3 +199,5 @@ apple.jpg
 assets/LOGO.png
 api_list.txt
 vlmeval/gemini_tmp.py
+run.sh
+run_g.sh

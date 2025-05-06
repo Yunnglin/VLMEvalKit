@@ -56,7 +56,7 @@ def infer_data_api(model, work_dir, model_name, dataset, index_set=None, api_npr
                 dump(ans_map, out_file)
             except Exception as err:
                 print(type(err), err)
-                
+
     res = {}
     if osp.exists(out_file):
         res = load(out_file)
@@ -79,7 +79,7 @@ def infer_data_api(model, work_dir, model_name, dataset, index_set=None, api_npr
     return res
 
 
-def infer_data(model, model_name, work_dir, dataset, out_file, verbose=False, api_nproc=4):
+def infer_data(model, model_name, work_dir, dataset, out_file, verbose=False, api_nproc=4, use_vllm=False):
     dataset_name = dataset.dataset_name
     prev_file = f'{work_dir}/{model_name}_{dataset_name}_PREV.pkl'
     res = load(prev_file) if osp.exists(prev_file) else {}
@@ -101,13 +101,20 @@ def infer_data(model, model_name, work_dir, dataset, out_file, verbose=False, ap
     if all_finished:
         res = {k: res[k] for k in data_indices}
         dump(res, out_file)
-        return
+        return model
 
     # Data need to be inferred
     data = data[~data['index'].isin(res)]
     lt = len(data)
 
-    model = supported_VLM[model_name]() if isinstance(model, str) else model
+    kwargs = {}
+    if model_name is not None and (
+        'Llama-4' in model_name
+        or 'Qwen2-VL' in model_name
+        or 'Qwen2.5-VL' in model_name
+    ):
+        kwargs = {'use_vllm': use_vllm}
+    model = supported_VLM[model_name](**kwargs) if isinstance(model, str) else model
 
     is_api = getattr(model, 'is_api', False)
     if is_api:
@@ -128,7 +135,7 @@ def infer_data(model, model_name, work_dir, dataset, out_file, verbose=False, ap
     else:
         model.set_dump_image(dataset.dump_image)
 
-    for i in tqdm(range(lt)):
+    for i in tqdm(range(lt), desc=f'Infer {model_name}/{dataset_name}, Rank {rank}/{world_size}'):
         idx = data.iloc[i]['index']
         if idx in res:
             continue
@@ -154,7 +161,9 @@ def infer_data(model, model_name, work_dir, dataset, out_file, verbose=False, ap
 
 
 # A wrapper for infer_data, do the pre & post processing
-def infer_data_job(model, work_dir, model_name, dataset, verbose=False, api_nproc=4, ignore_failed=False, limit=None):
+def infer_data_job(
+    model, work_dir, model_name, dataset, verbose=False, api_nproc=4, ignore_failed=False, limit=None, use_vllm=False
+):
     if limit:
         dataset.data = dataset.data.iloc[:limit]
     
@@ -178,7 +187,7 @@ def infer_data_job(model, work_dir, model_name, dataset, verbose=False, api_npro
 
     model = infer_data(
         model=model, work_dir=work_dir, model_name=model_name, dataset=dataset,
-        out_file=out_file, verbose=verbose, api_nproc=api_nproc)
+        out_file=out_file, verbose=verbose, api_nproc=api_nproc, use_vllm=use_vllm)
     if world_size > 1:
         dist.barrier()
 

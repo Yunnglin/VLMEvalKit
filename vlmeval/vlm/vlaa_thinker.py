@@ -9,38 +9,8 @@ import warnings
 
 from .base import BaseModel
 from .qwen2_vl.prompt import Qwen2VLPromptMixin
-from .qwen2_vl.model import split_model, ensure_image_url, ensure_video_url
-from ..smp import get_rank_and_world_size, get_gpu_memory, auto_split_flag, listinstr
-
-
-
-
-def split_model():
-    device_map = {}
-
-    total_gpus = torch.cuda.device_count()
-    rank, world_size = get_rank_and_world_size()
-    num_gpus = total_gpus // world_size
-    # + 8 is virtual layers for the memory of visual
-    num_layers = 80 + 8
-    num_layers_per_gpu = math.ceil(num_layers / num_gpus)
-    num_layers_per_gpu = [num_layers_per_gpu] * num_gpus
-    num_layers_per_gpu[0] -= 6
-    num_layers_per_gpu[-1] -= 2
-    layer_cnt = 0
-
-    for i, num_layer in enumerate(num_layers_per_gpu):
-        for j in range(num_layer):
-            device_map[f'model.layers.{layer_cnt}'] = rank + i * world_size
-            layer_cnt += 1
-
-    last_gpu = rank + (num_gpus - 1) * world_size
-    device_map['visual'] = rank
-    device_map['model.embed_tokens'] = rank
-    device_map['model.norm'] = last_gpu
-    device_map['model.rotary_emb'] = last_gpu
-    device_map['lm_head'] = last_gpu
-    return device_map
+from .qwen2_vl.model import ensure_image_url, ensure_video_url
+from ..smp import get_rank_and_world_size, get_gpu_memory, listinstr
 
 
 def extract_answer_tag(s: str, verbose=False) -> str:
@@ -56,7 +26,7 @@ def extract_answer_tag(s: str, verbose=False) -> str:
         return None
     else:
         return matches[0].strip()
-    
+
 
 def extract_response_for_eval(s: str, verbose=False):
     ret = None
@@ -69,7 +39,6 @@ def extract_response_for_eval(s: str, verbose=False):
     if ret is None:
         ret = s
     return ret
-
 
 
 class VLAAThinkerChat(Qwen2VLPromptMixin, BaseModel):
@@ -128,24 +97,10 @@ class VLAAThinkerChat(Qwen2VLPromptMixin, BaseModel):
         max_gpu_mem = max(gpu_mems) if gpu_mems != [] else -1
         assert max_gpu_mem > 0
 
-        # If only one process and GPU memory is less than 40GB
-        if '72b' in self.model_path.lower():
-            self.model = MODEL_CLS.from_pretrained(
-                model_path, torch_dtype='auto', device_map=split_model(), attn_implementation='flash_attention_2'
-            )
-            self.model.eval()
-        elif auto_split_flag():
-            assert world_size == 1, 'Only support world_size == 1 when AUTO_SPLIT is set for non-72B Qwen2-VL'
-            # Will Use All GPUs to run one model
-            self.model = MODEL_CLS.from_pretrained(
-                model_path, torch_dtype='auto', device_map='auto', attn_implementation='flash_attention_2'
-            )
-        else:
-            self.model = MODEL_CLS.from_pretrained(
-                model_path, torch_dtype='auto', device_map='cpu', attn_implementation='flash_attention_2'
-            )
-            self.model.cuda().eval()
-
+        self.model = MODEL_CLS.from_pretrained(
+            model_path, torch_dtype='auto', device_map='auto', attn_implementation='flash_attention_2'
+        )
+        self.model.eval()
         torch.cuda.empty_cache()
 
     def _prepare_content(self, inputs: list[dict[str, str]], dataset: str | None = None) -> list[dict[str, str]]:

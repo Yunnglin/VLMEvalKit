@@ -8,8 +8,9 @@ import warnings
 
 from .base import BaseModel
 from .qwen2_vl.prompt import Qwen2VLPromptMixin
-from .qwen2_vl.model import split_model, ensure_image_url, ensure_video_url
-from ..smp import get_rank_and_world_size, get_gpu_memory, auto_split_flag
+from .qwen2_vl.model import ensure_image_url, ensure_video_url
+from ..smp import get_rank_and_world_size, get_gpu_memory
+
 
 class VLMR1Chat(Qwen2VLPromptMixin, BaseModel):
     INSTALL_REQ = False
@@ -42,7 +43,7 @@ class VLMR1Chat(Qwen2VLPromptMixin, BaseModel):
             top_k=top_k,
             temperature=temperature,
             repetition_penalty=repetition_penalty,
-            use_cache = True
+            use_cache=True
         )
         self.system_prompt = system_prompt
         self.verbose = verbose
@@ -73,35 +74,13 @@ class VLMR1Chat(Qwen2VLPromptMixin, BaseModel):
         max_gpu_mem = max(gpu_mems) if gpu_mems != [] else -1
         assert max_gpu_mem > 0
 
-        # If only one process and GPU memory is less than 40GB
-        if "72b" in self.model_path.lower():
-            self.model = MODEL_CLS.from_pretrained(
-                model_path,
-                torch_dtype="auto",
-                device_map=split_model(),
-                attn_implementation="flash_attention_2",
-            )
-            self.model.eval()
-        elif auto_split_flag():
-            assert (
-                world_size == 1
-            ), "Only support world_size == 1 when AUTO_SPLIT is set for non-72B Qwen2-VL"
-            # Will Use All GPUs to run one model
-            self.model = MODEL_CLS.from_pretrained(
-                model_path,
-                torch_dtype="auto",
-                device_map="auto",
-                attn_implementation="flash_attention_2",
-            )
-        else:
-            self.model = MODEL_CLS.from_pretrained(
-                model_path,
-                torch_dtype="auto",
-                device_map="cpu",
-                attn_implementation="flash_attention_2",
-            )
-            self.model.cuda().eval()
-
+        self.model = MODEL_CLS.from_pretrained(
+            model_path,
+            torch_dtype="auto",
+            device_map="auto",
+            attn_implementation="flash_attention_2",
+        )
+        self.model.eval()
         torch.cuda.empty_cache()
 
     def _prepare_content(
@@ -111,7 +90,7 @@ class VLMR1Chat(Qwen2VLPromptMixin, BaseModel):
         inputs list[dict[str, str]], each dict has keys: ['type', 'value']
         """
         content = []
-        
+
         post_prompt = '  Output the thinking process in <think> </think> and final answer in <answer> </answer> tags.'
 
         for s in inputs:
@@ -187,7 +166,7 @@ class VLMR1Chat(Qwen2VLPromptMixin, BaseModel):
             {"role": "user", "content": self._prepare_content(message, dataset=dataset)}
         )
         from termcolor import colored
-        
+
         print(colored(f"messages: === {messages}", "red"))
         print(colored(f"generate_kwargs: === {self.generate_kwargs}", "blue"))
         if self.verbose:
@@ -243,8 +222,8 @@ class VLMR1Chat(Qwen2VLPromptMixin, BaseModel):
             output_file = os.path.join(
                 self.output_dir, f"{self.model_path.split('/')[-1]}_{dataset}.jsonl"
             )
-            if message[0]['type']== 'image':
-                id = message[0]['value'].rsplit('/')[-1].split('.')[0] 
+            if message[0]['type'] == 'image':
+                id = message[0]['value'].rsplit('/')[-1].split('.')[0]
             else:
                 id = None
             import jsonlines
