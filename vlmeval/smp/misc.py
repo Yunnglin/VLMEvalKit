@@ -26,9 +26,7 @@ from sty import fg, bg, ef, rs
 
 
 def modelscope_flag_set():
-    # return os.environ.get('VLMEVALKIT_USE_MODELSCOPE', None) in ['1', 'True']
-    return True
-
+    return os.environ.get('VLMEVALKIT_USE_MODELSCOPE', 'True') in ['1', 'True']
 
 def process_punctuation(inText):
     import re

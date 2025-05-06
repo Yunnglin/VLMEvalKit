@@ -1,5 +1,4 @@
 # flake8: noqa
-from huggingface_hub import snapshot_download
 from ..smp import *
 from .video_base import VideoBaseDataset
 from .utils import build_judge, DEBUG_MESSAGE
@@ -161,7 +160,10 @@ class VDC(VideoBaseDataset):
                 if not osp.exists(osp.join(pth, 'videos', video_pth)):
                     return False
             return True
-
+        
+        if modelscope_flag_set():
+            repo_id = "AI-ModelScope/VLMEval-VDC"
+            
         if os.path.exists(repo_id):
             dataset_path = repo_id
         else:
@@ -169,7 +171,12 @@ class VDC(VideoBaseDataset):
             if cache_path is not None and check_integrity(cache_path):
                 dataset_path = cache_path
             else:
-                cache_path = snapshot_download(repo_id=repo_id, repo_type="dataset")
+                if modelscope_flag_set():
+                    from modelscope import dataset_snapshot_download
+                    cache_path = dataset_snapshot_download(dataset_id=repo_id)
+                else:
+                    from huggingface_hub import snapshot_download
+                    cache_path = snapshot_download(repo_id=repo_id, repo_type="dataset")
                 if not glob(osp.join(cache_path, "video")):
                     tar_files = glob(osp.join(cache_path, "**/*.tar*"), recursive=True)
 

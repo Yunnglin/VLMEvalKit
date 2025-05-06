@@ -25,6 +25,7 @@ class Arguments:
     limit: Optional[int] = None
     config: Optional[str] = None
     judge_args: Optional[str] = None
+    use_vllm: bool = False
 
     # For OpenAI API
     OPENAI_API_KEY: str = "EMPTY"
