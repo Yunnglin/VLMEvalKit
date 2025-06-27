@@ -148,6 +148,7 @@ Select the best answer to the following multiple-choice question based on the vi
     def save_video_frames(self, video, video_llm=False):
 
         vid_path = osp.join(self.data_root, 'video', video + '.mp4')
+        import decord
         vid = decord.VideoReader(vid_path)
         video_info = {
             "fps": vid.get_avg_fps(),

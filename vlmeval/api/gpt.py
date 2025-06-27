@@ -41,7 +41,7 @@ class OpenAIWrapper(BaseAPI):
                  verbose: bool = False,
                  system_prompt: str = None,
                  temperature: float = 0,
-                 timeout: int = 60,
+                 timeout: int = 300,
                  api_base: str = None,
                  max_tokens: int = 2048,
                  img_size: int = 512,
@@ -82,6 +82,12 @@ class OpenAIWrapper(BaseAPI):
             env_key = os.environ.get('XAI_API_KEY', '')
             if key is None:
                 key = env_key
+        elif 'gemini' in model and 'preview' in model:
+            # Will only handle preview models
+            env_key = os.environ.get('GOOGLE_API_KEY', '')
+            if key is None:
+                key = env_key
+            api_base = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
         else:
             if use_azure:
                 env_key = os.environ.get('AZURE_OPENAI_API_KEY', None)
@@ -107,8 +113,7 @@ class OpenAIWrapper(BaseAPI):
         assert img_detail in ['high', 'low']
         self.img_detail = img_detail
         self.timeout = timeout
-        self.o1_model = 'o1' in model or 'o3' in model
-
+        self.o1_model = ('o1' in model) or ('o3' in model) or ('o4' in model)
         super().__init__(wait=wait, retry=retry, system_prompt=system_prompt, verbose=verbose, **kwargs)
 
         if use_azure:
@@ -144,6 +149,9 @@ class OpenAIWrapper(BaseAPI):
             else:
                 self.logger.error('Unknown API Base. ')
                 raise NotImplementedError
+            if os.environ.get('BOYUE', None):
+                self.api_base = os.environ.get('BOYUE_API_BASE')
+                self.key = os.environ.get('BOYUE_API_KEY')
 
         self.logger.info(f'Using API Base: {self.api_base}; API Key: {self.key}')
 
@@ -202,7 +210,6 @@ class OpenAIWrapper(BaseAPI):
         payload = dict(
             model=self.model,
             messages=input_msgs,
-            # max_tokens=max_tokens,
             n=1,
             temperature=temperature,
             **kwargs)
@@ -212,6 +219,11 @@ class OpenAIWrapper(BaseAPI):
             payload.pop('temperature')
         else:
             payload['max_tokens'] = max_tokens
+
+        if 'gemini' in self.model:
+            payload.pop('max_tokens')
+            payload.pop('n')
+            payload['reasoning_effort'] = 'high'
 
         response = requests.post(
             self.api_base,

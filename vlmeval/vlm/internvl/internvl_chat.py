@@ -2,6 +2,7 @@ import math
 import pandas as pd
 import random
 import re
+import yaml
 import string
 import torch
 import torch.distributed as dist
@@ -9,6 +10,7 @@ import torchvision.transforms as T
 import transformers
 import warnings
 from PIL import Image
+from functools import partial
 from torchvision.transforms.functional import InterpolationMode
 from transformers import AutoTokenizer, AutoConfig, AutoModel, CLIPImageProcessor
 
@@ -18,13 +20,20 @@ from .utils import (build_multi_choice_prompt,
                     build_mcq_cot_prompt,
                     build_qa_cot_prompt,
                     mpo_post_processing,
+                    format_nav_prompt,
+                    pile_action_history,
                     reorganize_prompt,
                     load_image)
-from .utils import mpo_prompt_with_final_answer, mpo_prompt_without_final_answer
+from .utils import mpo_prompt_with_final_answer, mpo_prompt_without_final_answer, parse_bbox_internvl
+
 from ..base import BaseModel
-from ...dataset import DATASET_TYPE, DATASET_MODALITY
+from ...dataset import DATASET_TYPE, DATASET_MODALITY, build_dataset, infer_dataset_basename
 from ...smp import *
 
+# load all the gui templates
+upper_path = Path(__file__).parent
+with open(os.path.join(upper_path, "gui_template.yaml"), "r") as f:
+    GUI_TEMPLATE = yaml.load(f, Loader=yaml.FullLoader)
 
 R1_SYSTEM_PROMPT = """
 You are an AI assistant that rigorously follows this response protocol:
@@ -104,6 +113,7 @@ class InternVLChat(BaseModel):
                  load_in_8bit=False,
                  use_mpo_prompt=False,
                  version='V1.0',
+                 screen_parse=True,
                  # Best-of-N parameters
                  best_of_n=1,
                  reward_model_path=None,
@@ -160,6 +170,8 @@ class InternVLChat(BaseModel):
         # Replacement pattern to remove the hyphen (Image-1 -> Image1)
         self.reverse_replacement = r'Image\1'
 
+        self.screen_parse = screen_parse
+
         if use_lmdeploy:
             from lmdeploy import TurbomindEngineConfig, VisionConfig, pipeline, ChatTemplateConfig
             vision_config = VisionConfig(max_batch_size=4)
@@ -179,7 +191,7 @@ class InternVLChat(BaseModel):
                 load_in_8bit=load_in_8bit,
                 trust_remote_code=True,
                 low_cpu_mem_usage=True,
-                device_map='auto').eval()
+                device_map="auto").eval()
             self.device = 'cuda'
 
         if best_of_n > 1:
@@ -194,7 +206,7 @@ class InternVLChat(BaseModel):
                 load_in_8bit=load_in_8bit,
                 trust_remote_code=True,
                 low_cpu_mem_usage=True,
-                device_map='auto').eval()
+                device_map="auto").eval()
 
             if not self.use_cot:
                 os.environ['USE_COT'] = '1'
@@ -233,7 +245,15 @@ class InternVLChat(BaseModel):
 
         assert self.use_custom_prompt(dataset)
         assert dataset is None or isinstance(dataset, str)
-        tgt_path = self.dump_image(line, dataset)
+        # if dataset is not ChartMimic, dump image (assert "image_path" in line)
+        if not listinstr(['ChartMimic'], dataset):
+            tgt_path = self.dump_image(line, dataset)
+        else:
+            input_figure_path_rel = line["input_figure"]
+            ROOT = LMUDataRoot()
+            img_root = os.path.join(ROOT, 'images', 'ChartMimic')
+            input_figure_path = os.path.join(img_root, input_figure_path_rel)
+            tgt_path = [input_figure_path]
 
         if dataset is not None and DATASET_TYPE(dataset) == 'Y/N':
             question = line['question']
@@ -256,12 +276,31 @@ class InternVLChat(BaseModel):
                 prompt = question + '\nAnswer the question using a single word or phrase.'
             elif listinstr(['MathVista', 'MathVision', 'VCR', 'MTVQA', 'MMVet', 'MathVerse',
                             'MMDU', 'CRPE', 'MIA-Bench', 'MM-Math', 'DynaMath', 'QSpatial',
-                            'WeMath', 'LogicVista', 'MM-IFEval'], dataset):
+                            'WeMath', 'LogicVista', 'MM-IFEval', 'ChartMimic'], dataset):
                 prompt = question
                 if os.getenv('USE_COT') == '1':
                     prompt = build_qa_cot_prompt(line, prompt, self.cot_prompt)
             else:
                 prompt = question + '\nAnswer the question using a single word or phrase.'
+        elif dataset is not None and DATASET_TYPE(dataset) == 'GUI':
+            ds_basename = infer_dataset_basename(dataset)
+            ds = build_dataset(dataset, skeleton=True)
+            action_space = ds.get_action_space()
+            traj_dict = ds.get_trajectory(line)
+
+            prompt_config = GUI_TEMPLATE[ds_basename]
+            if 'history' in prompt_config["placeholders"]:
+                traj_dict['history'] = pile_action_history(traj_dict['history'])
+            prompt = format_nav_prompt(
+                (
+                    "Please provide the bounding box coordinate of the region this sentence describes: <ref>{task}</ref>"  # noqa: E501
+                    if self.screen_parse
+                    else prompt_config["template"]
+                ),
+                prompt_config["placeholders"],
+                action_space=action_space,
+                **traj_dict,
+            )
         else:
             # VQA_ex_prompt: OlympiadBench, VizWiz
             prompt = line['question']
@@ -293,6 +332,8 @@ class InternVLChat(BaseModel):
             self.max_num = 18
         elif listinstr(res_24_datasets, dataset):
             self.max_num = 24
+        elif DATASET_TYPE(dataset) == 'GUI':
+            self.max_num = 12
         else:
             self.max_num = 6
 
@@ -412,6 +453,15 @@ class InternVLChat(BaseModel):
                 response = mpo_post_processing(response, dataset)
             elif self.use_cot and self.use_postprocess:
                 response = extract_boxed_content(response)
+
+        if dataset is not None and DATASET_TYPE(dataset) == 'GUI' and self.screen_parse:
+            # Parse the bounding box coordinates from the response
+            response = parse_bbox_internvl(response)
+            # Normalize the coordinates to the range [0, 1]
+            if isinstance(response, list):
+                response = [item / 1000 for item in response]
+                # Convert the coordinates to the format required by the GUI
+                response = f"x={response[0]}, y={response[1]}"
 
         return response
 

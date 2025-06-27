@@ -21,7 +21,7 @@ class KimiVL(BaseModel):
         self.model = AutoModelForCausalLM.from_pretrained(
             model_path,
             torch_dtype="auto",
-            device_map="auto",
+            device_map="cuda",
             trust_remote_code=True,
         )
         self.processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True)
@@ -86,7 +86,7 @@ class KimiVL(BaseModel):
         ).to(self.model.device)
         generated_ids = self.model.generate(**inputs, max_new_tokens=4096)
         generated_ids_trimmed = [
-            out_ids[len(in_ids) :] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
+            out_ids[len(in_ids):] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
         ]
         response = self.processor.batch_decode(
             generated_ids_trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False
