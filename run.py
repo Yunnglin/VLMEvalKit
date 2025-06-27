@@ -267,7 +267,7 @@ def run_task(args):
 
         if use_config:
             model = build_model_from_config(cfg['model'], model_name, args.use_vllm)
-        print(args.reuse_aux)
+        # print(args.reuse_aux)
 
         for _, dataset_name in enumerate(args.data):
             if WORLD_SIZE > 1:
@@ -374,6 +374,7 @@ def run_task(args):
                         verbose=args.verbose,
                         api_nproc=args.nproc,
                         ignore_failed=args.ignore,
+                        limit=args.limit,
                         use_vllm=args.use_vllm)
                 else:
                     model = infer_data_job(
@@ -401,7 +402,7 @@ def run_task(args):
                 if args.judge is not None:
                     judge_kwargs['model'] = args.judge
                 else:
-                    print(dataset_name)
+                    # print(dataset_name)
                     if dataset.TYPE in ['MCQ', 'Y/N', 'MCQ_MMMU_Pro'] or listinstr(
                         ['moviechat1k', 'mme-reasoning'], dataset_name.lower()
                     ):

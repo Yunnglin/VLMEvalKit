@@ -3,7 +3,6 @@ dotenv
 einops
 # for gemini api
 google-genai
-gradio
 huggingface_hub
 imageio
 ipdb
