@@ -1,5 +1,6 @@
 from huggingface_hub import snapshot_download
 from ..smp import *
+from ..smp.file import get_intermediate_file_path, get_file_extension
 from .video_base import VideoBaseDataset
 from .utils import build_judge, DEBUG_MESSAGE
 
@@ -169,11 +170,14 @@ Select the best answer to the following multiple-choice question based on the vi
         flag = np.all([osp.exists(p) for p in frame_paths])
 
         if not flag:
-            images = [vid[i].asnumpy() for i in indices]
-            images = [Image.fromarray(arr) for arr in images]
-            for im, pth in zip(images, frame_paths):
-                if not osp.exists(pth) and not video_llm:
-                    im.save(pth)
+            lock_path = osp.splitext(vid_path)[0] + '.lock'
+            with portalocker.Lock(lock_path, 'w', timeout=30):
+                if not np.all([osp.exists(p) for p in frame_paths]):
+                    images = [vid[i].asnumpy() for i in indices]
+                    images = [Image.fromarray(arr) for arr in images]
+                    for im, pth in zip(images, frame_paths):
+                        if not osp.exists(pth):
+                            im.save(pth)
 
         return frame_paths, indices, video_info
 
@@ -222,11 +226,11 @@ Select the best answer to the following multiple-choice question based on the vi
     def evaluate(self, eval_file, **judge_kwargs):
         from .utils.videomme import get_dimension_rating, extract_characters_regex, extract_option
 
-        assert eval_file.endswith('.xlsx'), 'data file should be an xlsx file'
+        assert get_file_extension(eval_file) in ['xlsx', 'json', 'tsv'], 'data file should be an supported format (xlsx/json/tsv) file'  # noqa: E501
 
-        tmp_file = eval_file.replace('.xlsx', f'_tmp.pkl')
-        tgt_file = eval_file.replace('.xlsx', f'_rating.json')
-        score_file = eval_file.replace('.xlsx', f'_score.xlsx')
+        tmp_file = get_intermediate_file_path(eval_file, '_tmp', 'pkl')
+        tgt_file = get_intermediate_file_path(eval_file, '_rating', 'json')
+        score_file = get_intermediate_file_path(eval_file, '_score')
 
         if not osp.exists(score_file):
             model = judge_kwargs.get('model', 'exact_matching')
@@ -259,9 +263,9 @@ Select the best answer to the following multiple-choice question based on the vi
                         data.loc[data['index'] == idx].to_dict(orient='records')[0],
                         'Video-MME'
                     )
-                    data.loc[idx, 'score'] = int(extract_pred == ans)
+                    data.loc[data['index'] == idx, 'score'] = int(extract_pred == ans)
                 else:
-                    data.loc[idx, 'score'] = int(extract_characters_regex(pred) == ans)
+                    data.loc[data['index'] == idx, 'score'] = int(extract_characters_regex(pred) == ans)
 
             rejected = [x for x in data['score'] if x == -1]
 
