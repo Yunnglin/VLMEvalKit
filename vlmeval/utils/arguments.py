@@ -27,6 +27,7 @@ class Arguments:
     judge_args: Optional[str] = None
     use_vllm: bool = False
     reuse_aux: bool = True
+    use_verifier: bool = False
 
     # For OpenAI API
     OPENAI_API_KEY: str = "EMPTY"
