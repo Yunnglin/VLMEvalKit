@@ -1,23 +1,17 @@
-import os
 import json
-from typing import Dict, List, Tuple, Any, Union
-import pandas as pd
-import warnings
-import ast
-import math
-from openai import OpenAI
-from vlmeval.dataset.image_base import ImageBaseDataset
-from vlmeval.smp import misc, file
-from vlmeval.smp.file import get_intermediate_file_path
-from vlmeval.dataset.utils.simplevqa import *
-from tqdm import tqdm
-import pdb
-from pathlib import Path
-import traceback
+import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
+from typing import Any, Dict, List, Union
 
-# gpt4_key = "your-key"
-# client = OpenAI(api_key = gpt4_key)
+import pandas as pd
+from openai import OpenAI
+from tqdm import tqdm
+
+from vlmeval.dataset.image_base import ImageBaseDataset
+from vlmeval.dataset.utils.simplevqa import SimpleVQAEval
+from vlmeval.smp import file, misc
+from vlmeval.smp.file import get_intermediate_file_path
 
 NUM_WORKERS = 16
 
@@ -104,7 +98,7 @@ COMPARE_ANSWER_PROMPT = """
 class SimpleVQA(ImageBaseDataset):
     TYPE = "VQA"
     DATASET_URL = {
-        "SimpleVQA": "SimpleVQA.tsv",
+        "SimpleVQA": "https://opencompass.openxlab.space/utils/VLMEval/SimpleVQA.tsv",
     }
     DATASET_MD5 = {
         "SimpleVQA": "e3ce3c11df59a2a15d37489a8b245a87",
@@ -140,10 +134,19 @@ class SimpleVQA(ImageBaseDataset):
 
         return msgs
 
-    def get_scores(self, result_file: str) -> pd.DataFrame:
+    def get_scores(self, result_file: str, **judge_kwargs: Any) -> pd.DataFrame:
         data = file.load(result_file)
         model_keys = ['model_response']
         fout = open(str(Path(result_file).parent) + '/gpt_eval.json', 'w', encoding='utf-8')
+
+        gpt4_key = os.environ.get('OPENAI_API_KEY', None)
+        base_url = os.environ.get('OPENAI_API_BASE', None)
+        nproc = judge_kwargs.get('nproc', 16)
+
+        client = OpenAI(
+            api_key=gpt4_key,
+            base_url=base_url
+        )
 
         def process_one(idx):
             question = data['question'][idx]
@@ -160,7 +163,7 @@ class SimpleVQA(ImageBaseDataset):
                     temperature=1
                 )
                 res = response.choices[0].message.content
-                res = res.replace("```json","").replace("```python","").replace("```","").strip()
+                res = res.replace("```json", "").replace("```python", "").replace("```", "").strip()
                 if res[-1] != "}":
                     res += "}"
                 res = json.loads(res)
@@ -175,7 +178,7 @@ class SimpleVQA(ImageBaseDataset):
             return idx, res_json
 
         results = [None] * len(data)
-        with ThreadPoolExecutor(max_workers=NUM_WORKERS) as executor:
+        with ThreadPoolExecutor(max_workers=nproc) as executor:
             futures = {executor.submit(process_one, i): i for i in range(len(data))}
 
             for future in tqdm(as_completed(futures), total=len(data)):
@@ -198,7 +201,7 @@ class SimpleVQA(ImageBaseDataset):
         Returns:
             DataFrame with evaluation scores by category
         """
-        score = self.get_scores(eval_file)
+        score = self.get_scores(eval_file, **judge_kwargs)
         score_file = get_intermediate_file_path(eval_file, "_acc", "csv")
         file.dump(score, score_file)
         return score

@@ -1,10 +1,13 @@
+import os.path as osp
 from ast import literal_eval
+from collections import defaultdict
 
+import pandas as pd
+
+from vlmeval.smp import dump, get_intermediate_file_path, load, toliststr
+from vlmeval.utils import track_progress_rich
 from .image_base import ImageBaseDataset
-from .utils import build_judge, DEBUG_MESSAGE
-from ..smp import *
-from ..utils import track_progress_rich
-
+from .utils import DEBUG_MESSAGE, build_judge
 
 LLM_PARSE_ANSWER_PROMPT = '''
 You are given a pairwise judgement for two responses. Please return the better response according to the judgement.
@@ -74,7 +77,7 @@ class VLRewardBench(ImageBaseDataset):
     DATASET_URL = {
         'VL-RewardBench': 'https://huggingface.co/datasets/MMInstruction/VL-RewardBench/resolve/main/vl_rewardbench.tsv'
     }
-    DATASET_MD5 = {'VL-RewardBench': '1d2676f4ab4a5f755019ec0af2b28189'}
+    DATASET_MD5 = {'VL-RewardBench': '4849259836bc143c43e8b77b9c84b398'}
 
     # Given one data record, return the built prompt (a multi-modal message), can override
     def build_prompt(self, line):

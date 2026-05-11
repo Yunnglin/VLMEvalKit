@@ -165,6 +165,10 @@ scripts/*ttf
 .history
 cache_dir/*
 
+# Ignore data and ckpts
+*.pth
+data
+
 # Evaluation Outputs
 outputs/*
 
@@ -213,3 +217,10 @@ GLM4.5*
 SenseNova*
 
 .DS_Store
+
+temp
+result*
+debug
+outputs
+scripts/data
+test_eval.py

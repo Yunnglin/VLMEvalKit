@@ -1,12 +1,11 @@
-import torch
 import os.path as osp
 import warnings
-from .base import BaseModel
-from ..smp import splitlen
+
+import torch
 from PIL import Image
 
-import os
-import math
+from ..smp import splitlen
+from .base import BaseModel
 
 
 class SmolVLM(BaseModel):
@@ -356,8 +355,8 @@ class SmolVLM2(BaseModel):
     INTERLEAVE = True
 
     def __init__(self, model_path="HuggingFaceTB/SmolVLM2-2.2B-Instruct", **kwargs):
-        from transformers import AutoProcessor, AutoModelForImageTextToText
         import torch
+        from transformers import AutoModelForImageTextToText, AutoProcessor
 
         assert osp.exists(model_path) or splitlen(model_path) == 2
 
@@ -365,10 +364,11 @@ class SmolVLM2(BaseModel):
         # Set resolution based on model
         if "SmolVLM2-2.2B" in model_path:
             self.resolution = 384
-        elif "SmolVLM2-256M" in model_path or "SmolVLM2-500M" in model_path:
+        elif "SmolVLM2-256M" in model_path or "SmolVLM2-500M" in model_path or "Solari" in model_path:
             self.resolution = 512
         else:
-            raise ValueError(f"Unknown model {model_path}, cannot determine resolution")
+            self.resolution = 512
+            warnings.warn(f"Unknown model {model_path}, defaulting to resolution 512")
 
         self.processor = AutoProcessor.from_pretrained(model_path)
         self.model = AutoModelForImageTextToText.from_pretrained(
@@ -505,7 +505,6 @@ class SmolVLM2(BaseModel):
         """Build prompt for video datasets with frame sampling"""
         import numpy as np
         from transformers.image_utils import load_image
-        from PIL import Image
 
         # Configure processor for video frames
         self.processor.image_processor.size = {"longest_edge": self.resolution}
@@ -588,7 +587,7 @@ class SmolVLM2(BaseModel):
                 prompt_parts.extend([f"Frame from {ts_str}:", "<image>"])
                 try:
                     images.append(load_image(img["value"]))
-                except:
+                except Exception:
                     images.append(self.read_image(img["value"]))
             prompt_parts.append("\n")
 

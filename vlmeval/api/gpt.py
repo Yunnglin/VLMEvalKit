@@ -1,7 +1,15 @@
-from ..smp import *
+import json
+import math
 import os
-import sys
+
+import numpy as np
+import requests
+from PIL import Image
+
+from vlmeval.smp import encode_image_to_base64, get_logger
 from .base import BaseAPI
+
+logger = get_logger(__name__)
 
 APIBASES = {
     'OFFICIAL': 'https://api.openai.com/v1/chat/completions',
@@ -44,6 +52,8 @@ class OpenAIWrapper(BaseAPI):
                  api_base: str = None,
                  max_tokens: int = 2048,
                  img_size: int = -1,
+                 total_img_size: int = -1,
+                 max_file_size: int = 1e9,
                  img_detail: str = 'low',
                  use_azure: bool = False,
                  video_llm: bool = False,
@@ -86,7 +96,7 @@ class OpenAIWrapper(BaseAPI):
             env_key = os.environ.get('GOOGLE_API_KEY', '')
             if key is None:
                 key = env_key
-            api_base = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+            # api_base = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
         elif 'ernie' in model:
             env_key = os.environ.get('BAIDU_API_KEY', '')
             if key is None:
@@ -115,6 +125,9 @@ class OpenAIWrapper(BaseAPI):
         self.key = key
         assert img_size > 0 or img_size == -1
         self.img_size = img_size
+        assert total_img_size > 0 or total_img_size == -1
+        self.total_img_size = total_img_size
+        self.max_file_size = max_file_size
         assert img_detail in ['high', 'low']
         self.img_detail = img_detail
         self.timeout = timeout
@@ -141,7 +154,7 @@ class OpenAIWrapper(BaseAPI):
         else:
             if api_base is None:
                 if 'OPENAI_API_BASE' in os.environ and os.environ['OPENAI_API_BASE'] != '':
-                    self.logger.info('Environment variable OPENAI_API_BASE is set. Will use it as api_base. ')
+                    logger.info('Environment variable OPENAI_API_BASE is set. Will use it as api_base. ')
                     api_base = os.environ['OPENAI_API_BASE']
                 else:
                     api_base = 'OFFICIAL'
@@ -153,28 +166,36 @@ class OpenAIWrapper(BaseAPI):
             elif api_base.startswith('http'):
                 self.api_base = api_base
             else:
-                self.logger.error('Unknown API Base. ')
+                logger.error('Unknown API Base. ')
                 raise NotImplementedError
             if os.environ.get('BOYUE', None):
                 self.api_base = os.environ.get('BOYUE_API_BASE')
                 self.key = os.environ.get('BOYUE_API_KEY')
 
-        self.logger.info(f'Using API Base: {self.api_base}; API Key: {self.key}')
+        logger.info(f'Using API Base: {self.api_base}; API Key: {self.key}')
 
     # inputs can be a lvl-2 nested list: [content1, content2, content3, ...]
     # content can be a string or a list of image & text
     def prepare_itlist(self, inputs):
         assert np.all([isinstance(x, dict) for x in inputs])
         has_images = np.sum([x['type'] in ['image', 'video'] for x in inputs])
+        image_num = len([x for x in inputs if x['type'] == 'image'])
         if has_images:
             content_list = []
             for msg in inputs:
-                if msg['type'] == 'text':
+                if msg['type'] == 'text' and msg['value']:  # Skip empty string
                     content_list.append(dict(type='text', text=msg['value']))
                 elif msg['type'] == 'image':
                     from PIL import Image
                     img = Image.open(msg['value'])
-                    b64 = encode_image_to_base64(img, target_size=self.img_size)
+                    target_size = math.inf
+                    if self.img_size > 0:
+                        target_size = self.img_size
+                    if self.total_img_size > 0:
+                        target_size = min(target_size, int(self.img_size / (image_num**0.5)))
+                    target_size = -1 if math.isinf(target_size) else target_size
+                    b64 = encode_image_to_base64(
+                        img, target_size=target_size, max_file_size=self.max_file_size)
                     img_struct = dict(url=f'data:image/jpeg;base64,{b64}', detail=self.img_detail)
                     content_list.append(dict(type='image_url', image_url=img_struct))
                 elif msg['type'] == 'video':
@@ -234,9 +255,23 @@ class OpenAIWrapper(BaseAPI):
             payload.pop('n')
             payload['reasoning_effort'] = 'high'
 
+        if 'openai.com' not in self.api_base and payload.get('n') == 1:
+            payload.pop('n', None)
+
+        proxies = {}
+        if os.getenv('http_proxy'):
+            proxies['http'] = os.getenv('http_proxy')
+        if os.getenv('https_proxy'):
+            proxies['https'] = os.getenv('https_proxy')
+        proxies = proxies or None
+
         response = requests.post(
             self.api_base,
-            headers=headers, data=json.dumps(payload), timeout=self.timeout * 1.1)
+            headers=headers,
+            data=json.dumps(payload),
+            proxies=proxies,
+            timeout=self.timeout * 1.1,
+        )
         ret_code = response.status_code
         ret_code = 0 if (200 <= int(ret_code) < 300) else ret_code
         answer = self.fail_msg
@@ -244,9 +279,9 @@ class OpenAIWrapper(BaseAPI):
             resp_struct = json.loads(response.text)
             answer = resp_struct['choices'][0]['message']['content'].strip()
         except Exception as err:
-            # if self.verbose:
-            self.logger.error(f'{type(err)}: {err}')
-            self.logger.error(response.text if hasattr(response, 'text') else response)
+            logger.error(f'{type(err)}: {err}')
+            if self.verbose:
+                logger.error(response.text if hasattr(response, 'text') else response)
 
         return ret_code, answer, response
 
@@ -272,12 +307,13 @@ class OpenAIWrapper(BaseAPI):
 
     def get_token_len(self, inputs) -> int:
         import tiktoken
+
         try:
             enc = tiktoken.encoding_for_model(self.model)
         except Exception as err:
             if 'gpt' in self.model.lower():
                 if self.verbose:
-                    self.logger.warning(f'{type(err)}: {err}')
+                    logger.warning(f'{type(err)}: {err}')
                 enc = tiktoken.encoding_for_model('gpt-4')
             else:
                 return 0
